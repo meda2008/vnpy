@@ -17,7 +17,8 @@ def run(engine: ScriptEngine):
     5. 股票市场扫描选股类交易策略（龙一、龙二）
     6. 等等~~~
     """
-    vt_symbols = ["IF1912.CFFEX", "rb2001.SHFE"]
+    #vt_symbols = ["IF1912.CFFEX", "rb2001.SHFE"]
+    vt_symbols = ["GBTC.SMART", "BNBBTC.BINANCE"]
 
     # 订阅行情
     engine.subscribe(vt_symbols)

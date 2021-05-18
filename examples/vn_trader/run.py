@@ -4,7 +4,7 @@ from vnpy.event import EventEngine
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import MainWindow, create_qapp
 
-from vnpy.gateway.ctp import CtpGateway
+# from vnpy.gateway.ctp import CtpGateway
 # from vnpy.gateway.ctptest import CtptestGateway
 # from vnpy.gateway.mini import MiniGateway
 # from vnpy.gateway.minitest import MinitestGateway
@@ -20,13 +20,13 @@ from vnpy.gateway.ctp import CtpGateway
 # from vnpy.gateway.oes import OesGateway
 # from vnpy.gateway.comstar import ComstarGateway
 # from vnpy.gateway.futu import FutuGateway
-# from vnpy.gateway.ib import IbGateway
+from vnpy.gateway.ib import IbGateway
 # from vnpy.gateway.tiger import TigerGateway
 # from vnpy.gateway.tap import TapGateway
 # from vnpy.gateway.da import DaGateway
 # from vnpy.gateway.mt5 import Mt5Gateway
-# from vnpy.gateway.binance import BinanceGateway
-# from vnpy.gateway.binances import BinancesGateway
+from vnpy.gateway.binance import BinanceGateway
+from vnpy.gateway.binances import BinancesGateway
 # from vnpy.gateway.huobi import HuobiGateway
 # from vnpy.gateway.huobif import HuobifGateway
 # from vnpy.gateway.huobis import HuobisGateway
@@ -49,7 +49,7 @@ from vnpy.gateway.ctp import CtpGateway
 
 # from vnpy.app.cta_strategy import CtaStrategyApp
 # from vnpy.app.cta_backtester import CtaBacktesterApp
-# from vnpy.app.spread_trading import SpreadTradingApp
+from vnpy.app.spread_trading import SpreadTradingApp
 # from vnpy.app.algo_trading import AlgoTradingApp
 # from vnpy.app.option_master import OptionMasterApp
 # from vnpy.app.portfolio_strategy import PortfolioStrategyApp
@@ -73,7 +73,7 @@ def main():
 
     main_engine = MainEngine(event_engine)
 
-    main_engine.add_gateway(CtpGateway)
+    # main_engine.add_gateway(CtpGateway)
     # main_engine.add_gateway(CtptestGateway)
     # main_engine.add_gateway(MiniGateway)
     # main_engine.add_gateway(MinitestGateway)
@@ -89,13 +89,13 @@ def main():
     # main_engine.add_gateway(OesGateway)
     # main_engine.add_gateway(ComstarGateway)
     # main_engine.add_gateway(FutuGateway)
-    # main_engine.add_gateway(IbGateway)
+    main_engine.add_gateway(IbGateway)
     # main_engine.add_gateway(TigerGateway)
     # main_engine.add_gateway(TapGateway)
     # main_engine.add_gateway(DaGateway)
     # main_engine.add_gateway(Mt5Gateway)
-    # main_engine.add_gateway(BinanceGateway)
-    # main_engine.add_gateway(BinancesGateway)    
+    main_engine.add_gateway(BinanceGateway)
+    main_engine.add_gateway(BinancesGateway)    
     # main_engine.add_gateway(HuobiGateway)
     # main_engine.add_gateway(HuobifGateway)
     # main_engine.add_gateway(HuobisGateway)    
@@ -118,7 +118,7 @@ def main():
 
     # main_engine.add_app(CtaStrategyApp)
     # main_engine.add_app(CtaBacktesterApp)
-    # main_engine.add_app(SpreadTradingApp)
+    main_engine.add_app(SpreadTradingApp)
     # main_engine.add_app(AlgoTradingApp)
     # main_engine.add_app(OptionMasterApp)
     # main_engine.add_app(PortfolioStrategyApp)
@@ -136,6 +136,7 @@ def main():
 
     
     main_window = MainWindow(main_engine, event_engine)
+    main_window.setMinimumSize(800, 600)
     main_window.showMaximized()
 
     qapp.exec()
