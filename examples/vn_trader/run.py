@@ -59,7 +59,7 @@ from vnpy.app.spread_trading import SpreadTradingApp
 # from vnpy.app.rpc_service import RpcServiceApp
 # from vnpy.app.excel_rtd import ExcelRtdApp
 # from vnpy.app.data_manager import DataManagerApp
-# from vnpy.app.data_recorder import DataRecorderApp
+from vnpy.app.data_recorder import DataRecorderApp
 # from vnpy.app.risk_manager import RiskManagerApp
 # from vnpy.app.portfolio_manager import PortfolioManagerApp
 # from vnpy.app.paper_account import PaperAccountApp
@@ -128,7 +128,7 @@ def main():
     # main_engine.add_app(RpcServiceApp)
     # main_engine.add_app(ExcelRtdApp)
     # main_engine.add_app(DataManagerApp)
-    # main_engine.add_app(DataRecorderApp)
+    main_engine.add_app(DataRecorderApp)
     # main_engine.add_app(RiskManagerApp)
     # main_engine.add_app(PortfolioManagerApp)
     # main_engine.add_app(PaperAccountApp)

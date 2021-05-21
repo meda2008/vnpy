@@ -23,6 +23,7 @@ from ..event import (
     EVENT_ORDER,
     EVENT_POSITION,
     EVENT_ACCOUNT,
+    EVENT_CONTRACT,
     EVENT_LOG
 )
 from ..object import OrderRequest, SubscribeRequest, PositionData
@@ -601,6 +602,7 @@ class TradingWidget(QtWidgets.QWidget):
     """
 
     signal_tick = QtCore.pyqtSignal(Event)
+    signal_contract = QtCore.pyqtSignal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         """"""
@@ -626,6 +628,12 @@ class TradingWidget(QtWidgets.QWidget):
 
         self.symbol_line = QtWidgets.QLineEdit()
         self.symbol_line.returnPressed.connect(self.set_vt_symbol)
+
+        self.vt_symbols = [c.vt_symbol.split('.')[0] for c in self.main_engine.get_all_contracts()]
+        self.symbol_completer = QtWidgets.QCompleter(self.vt_symbols)
+        self.symbol_completer.setFilterMode(QtCore.Qt.MatchContains)
+        self.symbol_completer.setCompletionMode(self.symbol_completer.PopupCompletion)
+        self.symbol_line.setCompleter(self.symbol_completer)
 
         self.name_line = QtWidgets.QLineEdit()
         self.name_line.setReadOnly(True)
@@ -763,6 +771,9 @@ class TradingWidget(QtWidgets.QWidget):
         """"""
         self.signal_tick.connect(self.process_tick_event)
         self.event_engine.register(EVENT_TICK, self.signal_tick.emit)
+        self.signal_contract.connect(self.process_contract_event)
+        self.event_engine.register(EVENT_CONTRACT, self.signal_contract.emit)
+
 
     def process_tick_event(self, event: Event) -> None:
         """"""
@@ -805,6 +816,15 @@ class TradingWidget(QtWidgets.QWidget):
 
         if self.price_check.isChecked():
             self.price_line.setText(f"{tick.last_price:.{price_digits}f}")
+
+    def process_contract_event(self, event: Event):
+        """"""
+        contract = event.data
+        self.vt_symbols.append(contract.vt_symbol.split('.')[0])
+
+        model = self.symbol_completer.model()
+        model.setStringList(self.vt_symbols)
+
 
     def set_vt_symbol(self) -> None:
         """
@@ -1009,6 +1029,7 @@ class ContractManager(QtWidgets.QWidget):
 
         self.filter_line = QtWidgets.QLineEdit()
         self.filter_line.setPlaceholderText("输入合约代码或者交易所，留空则查询所有合约")
+        self.filter_line.returnPressed.connect(self.show_contracts)
 
         self.button_show = QtWidgets.QPushButton("查询")
         self.button_show.clicked.connect(self.show_contracts)

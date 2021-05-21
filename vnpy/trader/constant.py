@@ -122,6 +122,10 @@ class Exchange(Enum):
     KRX = "KRX"             # Korean Exchange
     OTC = "OTC"             # OTC Product (Forex/CFD/Pink Sheet Equity)
     IBKRATS = "IBKRATS"     # Paper Trading Exchange of IB
+    TSE = "TSE"             # Tokyo Stock Exchange
+    CMECRYPTO = "CMECRYPTO" # CME Crypto Currency Exchange
+    ICECRYPTO = "ICECRYPTO" # ICE Crypto Currency Exchange
+
 
     # CryptoCurrency
     BITMEX = "BITMEX"

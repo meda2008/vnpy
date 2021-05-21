@@ -89,7 +89,10 @@ EXCHANGE_VT2IB = {
     Exchange.BATS: "BATS",
     Exchange.IEX: "IEX",
     Exchange.IBKRATS: "IBKRATS",
-    Exchange.OTC: "PINK"
+    Exchange.OTC: "PINK",
+    Exchange.TSE: "TSE",
+    Exchange.CMECRYPTO: "CMECRYPTO",
+    Exchange.ICECRYPTO: "ICECRYPTO",
 }
 EXCHANGE_IB2VT = {v: k for k, v in EXCHANGE_VT2IB.items()}
 
@@ -533,7 +536,7 @@ class IbApi(EWrapper):
             return
 
         try:
-            ib_size = int(contract.multiplier)
+            ib_size = float(contract.multiplier)
         except ValueError:
             ib_size = 1
         price = averageCost / ib_size
@@ -576,7 +579,7 @@ class IbApi(EWrapper):
             exchange=EXCHANGE_IB2VT[ib_contract.exchange],
             name=contractDetails.longName,
             product=PRODUCT_IB2VT[ib_contract.secType],
-            size=int(ib_contract.multiplier),
+            size=float(ib_contract.multiplier),
             pricetick=contractDetails.minTick,
             net_position=True,
             history_data=True,
@@ -869,7 +872,13 @@ def generate_ib_contract(symbol: str, exchange: Exchange) -> Optional[Contract]:
 
         if ib_contract.secType == "FUT":
             if len(fields) == 5:
-                ib_contract.multiplier = int(fields[2])
+                try:
+                    ib_contract.multiplier = float(fields[2])
+                except:
+                    ib_contract.tradingClass = fields[2]
+            elif len(fields) == 6:
+                ib_contract.multiplier = float(fields[2])
+                ib_contract.tradingClass = fields[3]
 
         if ib_contract.secType in ["OPT", "FOP"]:
             ib_contract.right = fields[2]
@@ -887,6 +896,9 @@ def generate_symbol(ib_contract: Contract) -> str:
 
     if ib_contract.secType in ["FUT", "OPT", "FOP"]:
         fields.append(ib_contract.lastTradeDateOrContractMonth)
+
+    if ib_contract.secType == "FUT" and ib_contract.exchange.endswith('CRYPTO'):
+        fields.append(ib_contract.tradingClass)
 
     if ib_contract.secType in ["OPT", "FOP"]:
         fields.append(ib_contract.right)

@@ -238,7 +238,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dock = QtWidgets.QDockWidget(name)
         dock.setWidget(widget)
         dock.setObjectName(name)
-        dock.setFeatures(dock.DockWidgetFloatable | dock.DockWidgetMovable)
+        dock.setFeatures(dock.DockWidgetFloatable | dock.DockWidgetMovable | dock.DockWidgetClosable)
         self.addDockWidget(area, dock)
         return widget, dock
 
