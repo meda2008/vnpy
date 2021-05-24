@@ -2,9 +2,14 @@
 Widget for spread trading.
 """
 
+from datetime import datetime, timedelta
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine
-from vnpy.trader.constant import Direction, Offset
+from vnpy.app.spread_trading import BarData
+from vnpy.trader.database import database_manager
+from vnpy.trader.constant import Exchange, Direction, Offset, Interval
+from vnpy.trader.utility import BarGenerator, ArrayManager
+from vnpy.chart import ChartWidget, VolumeItem, CandleItem
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.ui.widget import (
     BaseMonitor, BaseCell,
@@ -252,6 +257,9 @@ class SpreadAlgoWidget(QtWidgets.QFrame):
         button_start = QtWidgets.QPushButton("启动")
         button_start.clicked.connect(self.start_algo)
 
+        button_chart = QtWidgets.QPushButton("行情")
+        button_chart.clicked.connect(self.create_chart)
+
         self.lock_combo = QtWidgets.QComboBox()
         self.lock_combo.addItems(
             ["否", "是"]
@@ -290,6 +298,7 @@ class SpreadAlgoWidget(QtWidgets.QFrame):
         form.addRow("间隔", self.interval_line)
         form.addRow("锁仓", self.lock_combo)
         form.addRow(button_start)
+        form.addRow(button_chart)
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(form)
@@ -325,6 +334,20 @@ class SpreadAlgoWidget(QtWidgets.QFrame):
         self.spread_engine.start_algo(
             name, direction, offset, price, volume, payup, interval, lock
         )
+
+    def create_chart(self):
+        """"""
+        spread_name = self.name_line.text()
+        if not spread_name:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "创建失败",
+                "请输入价差名称",
+                QtWidgets.QMessageBox.Ok
+            )
+            return
+        widget = SpreadChartWidget(self.spread_engine)
+        widget.start(spread_name)
 
     def add_spread(self):
         """"""
@@ -559,6 +582,65 @@ class SpreadRemoveDialog(QtWidgets.QDialog):
         spread_name = self.name_combo.currentText()
         self.spread_engine.remove_spread(spread_name)
         self.accept()
+
+
+class SpreadChartWidget(ChartWidget):
+    """"""
+
+    signal = QtCore.pyqtSignal(Event)
+
+    def __init__(self, spread_engine: SpreadEngine):
+        super().__init__()
+
+        self.strategy_engine = spread_engine.strategy_engine
+        self.main_engine = spread_engine.main_engine
+        self.event_engine = spread_engine.event_engine
+        self.bg = BarGenerator(self.on_spread_bar)
+        self.name = None
+
+        self.init_ui()
+        self.register_event()
+
+    def init_ui(self):
+        """"""
+        self.add_plot("candle", hide_x_axis=True)
+        self.add_plot("volume", maximum_height=200)
+        self.add_item(CandleItem, "candle", "candle")
+        self.add_item(VolumeItem, "volume", "volume")
+        self.add_cursor()
+
+    def register_event(self):
+        """"""
+        self.signal.connect(self.process_event)
+
+        self.event_engine.register(
+            EVENT_SPREAD_DATA, self.signal.emit
+        )
+
+    def process_event(self, event: Event):
+        """"""
+        spread = event.data
+        if spread and spread.name == self.name:
+            tick = spread.to_tick()
+            self.bg.update_tick(tick)
+
+    def on_spread_bar(self, bar: BarData):
+        """"""
+        self.update_bar(bar)
+
+    def start(self, name: str):
+        """"""
+        self.name = name
+        end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        start = end - timedelta(days=1)
+        bars = database_manager.load_bar_data(
+            name,
+            Exchange.LOCAL,
+            interval=Interval.MINUTE,
+            start=start,
+            end=end)
+        self.update_history(bars)
+        self.show()
 
 
 class SpreadStrategyMonitor(QtWidgets.QWidget):
