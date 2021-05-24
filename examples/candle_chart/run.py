@@ -10,11 +10,11 @@ if __name__ == "__main__":
     app = create_qapp()
 
     bars = database_manager.load_bar_data(
-        "IF888",
-        Exchange.CFFEX,
+        "btcusdt",
+        Exchange.BINANCE,
         interval=Interval.MINUTE,
-        start=datetime(2019, 7, 1),
-        end=datetime(2019, 7, 17)
+        start=datetime(2021, 5, 10),
+        end=datetime(2021, 5, 21)
     )
 
     widget = ChartWidget()
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     timer = QtCore.QTimer()
     timer.timeout.connect(update_bar)
-    # timer.start(100)
+    timer.start(100)
 
     widget.show()
     app.exec_()
