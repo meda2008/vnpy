@@ -631,8 +631,9 @@ class SpreadChartWidget(ChartWidget):
     def start(self, name: str):
         """"""
         self.name = name
-        end = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        start = end - timedelta(days=1)
+        now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now + timedelta(days=1)
+        start = now - timedelta(days=3)
         bars = database_manager.load_bar_data(
             name,
             Exchange.LOCAL,
