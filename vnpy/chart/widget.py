@@ -615,6 +615,9 @@ class CompositeChartWidget(ChartWidget):
 
     def add_order(self, order: OrderData) -> None:
         """"""
+        if order is None:
+            return
+
         self.orders[order.orderid] = order
 
         order_item: OrderItem = self.get_item('order')
@@ -623,6 +626,9 @@ class CompositeChartWidget(ChartWidget):
 
     def add_trade(self, trade: TradeData) -> None:
         """"""
+        if trade is None:
+            return
+
         self.trades[trade.tradeid] = trade
 
         trade_item: TradeItem = self.get_item('trade')
