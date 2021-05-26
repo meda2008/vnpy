@@ -246,6 +246,10 @@ class BaseMonitor(QtWidgets.QTableWidget):
         save_action.triggered.connect(self.save_csv)
         self.menu.addAction(save_action)
 
+        clear_action = QtWidgets.QAction("清除数据", self)
+        clear_action.triggered.connect(self.clear_data)
+        self.menu.addAction(clear_action)
+
     def register_event(self) -> None:
         """
         Register event handler into event engine.
@@ -345,6 +349,13 @@ class BaseMonitor(QtWidgets.QTableWidget):
                     else:
                         row_data.append("")
                 writer.writerow(row_data)
+
+    def clear_data(self):
+        """
+        Clear table data
+        """
+        self.cells.clear()
+        self.clear()
 
     def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
         """

@@ -50,7 +50,7 @@ from vnpy.gateway.binances import BinancesGateway
 # from vnpy.app.cta_strategy import CtaStrategyApp
 # from vnpy.app.cta_backtester import CtaBacktesterApp
 from vnpy.app.spread_trading import SpreadTradingApp
-# from vnpy.app.algo_trading import AlgoTradingApp
+from vnpy.app.algo_trading import AlgoTradingApp
 # from vnpy.app.option_master import OptionMasterApp
 # from vnpy.app.portfolio_strategy import PortfolioStrategyApp
 # from vnpy.app.script_trader import ScriptTraderApp
@@ -119,7 +119,7 @@ def main():
     # main_engine.add_app(CtaStrategyApp)
     # main_engine.add_app(CtaBacktesterApp)
     main_engine.add_app(SpreadTradingApp)
-    # main_engine.add_app(AlgoTradingApp)
+    main_engine.add_app(AlgoTradingApp)
     # main_engine.add_app(OptionMasterApp)
     # main_engine.add_app(PortfolioStrategyApp)
     # main_engine.add_app(ScriptTraderApp)

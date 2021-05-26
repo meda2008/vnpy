@@ -250,9 +250,11 @@ class SpreadAlgoWidget(QtWidgets.QFrame):
 
         self.payup_line = QtWidgets.QLineEdit()
         self.payup_line.setValidator(int_validator)
+        self.payup_line.setText('0')
 
         self.interval_line = QtWidgets.QLineEdit()
         self.interval_line.setValidator(int_validator)
+        self.interval_line.setText('30')
 
         button_start = QtWidgets.QPushButton("启动")
         button_start.clicked.connect(self.start_algo)
