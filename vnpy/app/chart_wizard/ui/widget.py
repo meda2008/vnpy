@@ -7,8 +7,8 @@ from vnpy.event import EventEngine, Event
 from vnpy.chart import ChartWidget, CompositeChartWidget, CandleItem, VolumeItem
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore
-from vnpy.trader.event import EVENT_TICK, EVENT_CONTRACT
-from vnpy.trader.object import TickData, BarData, SubscribeRequest
+from vnpy.trader.event import EVENT_ORDER, EVENT_TRADE, EVENT_TICK, EVENT_CONTRACT
+from vnpy.trader.object import TickData, BarData, OrderData, TradeData, SubscribeRequest
 from vnpy.trader.utility import BarGenerator
 from vnpy.trader.constant import Interval
 
@@ -19,6 +19,8 @@ from ..engine import APP_NAME, EVENT_CHART_HISTORY, ChartWizardEngine
 
 class ChartWizardWidget(QtWidgets.QWidget):
     """"""
+    signal_order = QtCore.pyqtSignal(Event)
+    signal_trade = QtCore.pyqtSignal(Event)
     signal_tick = QtCore.pyqtSignal(Event)
     signal_spread = QtCore.pyqtSignal(Event)
     signal_history = QtCore.pyqtSignal(Event)
@@ -121,15 +123,33 @@ class ChartWizardWidget(QtWidgets.QWidget):
 
     def register_event(self) -> None:
         """"""
+        self.signal_order.connect(self.process_order_event)
+        self.signal_trade.connect(self.process_trade_event)
         self.signal_tick.connect(self.process_tick_event)
-        self.signal_history.connect(self.process_history_event)
         self.signal_spread.connect(self.process_spread_event)
+        self.signal_history.connect(self.process_history_event)
         self.signal_contract.connect(self.process_contract_event)
 
-        self.event_engine.register(EVENT_CHART_HISTORY, self.signal_history.emit)
+        self.event_engine.register(EVENT_ORDER, self.signal_order.emit)
+        self.event_engine.register(EVENT_TRADE, self.signal_trade.emit)
         self.event_engine.register(EVENT_TICK, self.signal_tick.emit)
         self.event_engine.register(EVENT_SPREAD_DATA, self.signal_spread.emit)
+        self.event_engine.register(EVENT_CHART_HISTORY, self.signal_history.emit)
         self.event_engine.register(EVENT_CONTRACT, self.signal_contract.emit)
+
+    def process_order_event(self, event: Event) -> None:
+        """"""
+        order: OrderData = event.data
+        chart = self.charts[order.vt_symbol]
+        if hasattr(chart, 'add_order'):
+            chart.add_order(order)
+
+    def process_trade_event(self, event: Event) -> None:
+        """"""
+        trade: TradeData = event.data
+        chart = self.charts[trade.vt_symbol]
+        if hasattr(chart, 'add_trade'):
+            chart.add_trade(trade)
 
     def process_tick_event(self, event: Event) -> None:
         """"""

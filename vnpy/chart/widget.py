@@ -607,14 +607,30 @@ class CompositeChartWidget(ChartWidget):
         self.update_last_price_line(bar)
 
     def update_last_price_line(self, bar: BarData) -> None:
-        """"""
+        """
+        Update last price.
+        """
         if self.last_price_line:
             self.last_price_line.setValue(bar.close_price)
 
+    def add_order(self, order: OrderData) -> None:
+        """"""
+        self.orders[order.orderid] = order
+
+        order_item: OrderItem = self.get_item('order')
+        if order_item:
+            order_item.add_order(order)
+
+    def add_trade(self, trade: TradeData) -> None:
+        """"""
+        self.trades[trade.tradeid] = trade
+
+        trade_item: TradeItem = self.get_item('trade')
+        if trade_item:
+            trade_item.add_trade(trade)
+
     def add_orders(self, orders: List[OrderData]) -> None:
-        """
-        增加委托单列表到委托单绘图部件
-        """
+        """"""
         for order in orders:
             self.orders[order.orderid] = order
 
@@ -623,9 +639,7 @@ class CompositeChartWidget(ChartWidget):
             order_item.add_orders(self.orders.values())
 
     def add_trades(self, trades: List[TradeData]) -> None:
-        """
-        增加成交单列表到委托单绘图部件
-        """
+        """"""
         for trade in trades:
             self.trades[trade.tradeid] = trade
 

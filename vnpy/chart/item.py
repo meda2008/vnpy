@@ -886,7 +886,6 @@ class TradeItem(ScatterPlotItem, CandleItem):
 
     def add_trade(self, trade: TradeData, draw: bool = False):
         """ 增加一个成交单到TradeItem """
-        # 这里使用reverse=True，是考虑到实盘成交往往发生在最新的bar里，可以加快搜索速度
         od = OrderedDict(sorted(self._manager._datetime_index_map.items(), key=lambda t: t[0], reverse=True))
         idx = self._manager.get_count() - 1
         for dt, ix in od.items():
@@ -973,8 +972,6 @@ class OrderItem(ScatterPlotItem, CandleItem):
 
     def add_order(self, order: OrderData, draw: bool = False):
         """ 增加一个委托单到OrderItem """
-        # 这里使用reverse=True，是考虑到实盘成交往往发生在最新的bar里，可以加快搜索速度
-
         od = OrderedDict(sorted(self._manager._datetime_index_map.items(), key=lambda t: t[0], reverse=True))
         idx = self._manager.get_count() - 1
         for dt, ix in od.items():
