@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 from tzlocal import get_localzone
 
 from vnpy.event import EventEngine, Event
-from vnpy.chart import ChartWidget, CandleItem, VolumeItem
+from vnpy.chart import ChartWidget, CompositeChartWidget, CandleItem, VolumeItem
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore
-from vnpy.trader.event import EVENT_TICK
+from vnpy.trader.event import EVENT_TICK, EVENT_CONTRACT
 from vnpy.trader.object import TickData, BarData, SubscribeRequest
 from vnpy.trader.utility import BarGenerator
 from vnpy.trader.constant import Interval
@@ -22,6 +22,7 @@ class ChartWizardWidget(QtWidgets.QWidget):
     signal_tick = QtCore.pyqtSignal(Event)
     signal_spread = QtCore.pyqtSignal(Event)
     signal_history = QtCore.pyqtSignal(Event)
+    signal_contract = QtCore.pyqtSignal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         """"""
@@ -44,12 +45,21 @@ class ChartWizardWidget(QtWidgets.QWidget):
         self.tab: QtWidgets.QTabWidget = QtWidgets.QTabWidget()
         self.symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
 
+        self.vt_symbols = [c.vt_symbol.split('.')[0] for c in self.main_engine.get_all_contracts()]
+        self.symbol_completer = QtWidgets.QCompleter(self.vt_symbols)
+        self.symbol_completer.setFilterMode(QtCore.Qt.MatchContains)
+        self.symbol_completer.setCompletionMode(self.symbol_completer.PopupCompletion)
+        self.symbol_line.setCompleter(self.symbol_completer)
+
+        self.type_combo = QtWidgets.QComboBox()
+        self.type_combo.addItems(['简单图表', '复杂图表'])
         self.button = QtWidgets.QPushButton("新建图表")
         self.button.clicked.connect(self.new_chart)
 
         hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(QtWidgets.QLabel("本地代码"))
         hbox.addWidget(self.symbol_line)
+        hbox.addWidget(self.type_combo)
         hbox.addWidget(self.button)
         hbox.addStretch()
 
@@ -61,12 +71,16 @@ class ChartWizardWidget(QtWidgets.QWidget):
 
     def create_chart(self) -> ChartWidget:
         """"""
-        chart = ChartWidget()
-        chart.add_plot("candle", hide_x_axis=True)
-        chart.add_plot("volume", maximum_height=200)
-        chart.add_item(CandleItem, "candle", "candle")
-        chart.add_item(VolumeItem, "volume", "volume")
-        chart.add_cursor()
+        is_simple = (self.type_combo.currentIndex() == 0)
+        if is_simple:
+            chart = ChartWidget()
+            chart.add_plot("candle", hide_x_axis=True)
+            chart.add_plot("volume", maximum_height=200)
+            chart.add_item(CandleItem, "candle", "candle")
+            chart.add_item(VolumeItem, "volume", "volume")
+            chart.add_cursor()
+        else:
+            chart = CompositeChartWidget()
         return chart
 
     def new_chart(self) -> None:
@@ -103,15 +117,19 @@ class ChartWizardWidget(QtWidgets.QWidget):
             end
         )
 
+        self.showMaximized()
+
     def register_event(self) -> None:
         """"""
         self.signal_tick.connect(self.process_tick_event)
         self.signal_history.connect(self.process_history_event)
         self.signal_spread.connect(self.process_spread_event)
+        self.signal_contract.connect(self.process_contract_event)
 
         self.event_engine.register(EVENT_CHART_HISTORY, self.signal_history.emit)
         self.event_engine.register(EVENT_TICK, self.signal_tick.emit)
         self.event_engine.register(EVENT_SPREAD_DATA, self.signal_spread.emit)
+        self.event_engine.register(EVENT_CONTRACT, self.signal_contract.emit)
 
     def process_tick_event(self, event: Event) -> None:
         """"""
@@ -158,6 +176,14 @@ class ChartWizardWidget(QtWidgets.QWidget):
             bar = copy(bg.bar)
             bar.datetime = bar.datetime.replace(second=0, microsecond=0)
             chart.update_bar(bar)
+
+    def process_contract_event(self, event: Event):
+        """"""
+        contract = event.data
+        self.vt_symbols.append(contract.vt_symbol.split('.')[0])
+
+        model = self.symbol_completer.model()
+        model.setStringList(self.vt_symbols)
 
     def on_bar(self, bar: BarData):
         """"""

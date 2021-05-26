@@ -147,6 +147,29 @@ class SpreadLogMonitor(QtWidgets.QTextEdit):
     def init_ui(self):
         """"""
         self.setReadOnly(True)
+        self.init_menu()
+
+    def init_menu(self) -> None:
+        """
+        Create right click menu.
+        """
+        self.menu = QtWidgets.QMenu(self)
+
+        clear_action = QtWidgets.QAction("清除数据", self)
+        clear_action.triggered.connect(self.clear_data)
+        self.menu.addAction(clear_action)
+
+    def clear_data(self):
+        """
+        Clear table data
+        """
+        self.clear()
+
+    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+        """
+        Show menu with right click.
+        """
+        self.menu.popup(QtGui.QCursor.pos())
 
     def register_event(self):
         """"""

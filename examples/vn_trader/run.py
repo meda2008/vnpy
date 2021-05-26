@@ -55,7 +55,7 @@ from vnpy.app.algo_trading import AlgoTradingApp
 # from vnpy.app.portfolio_strategy import PortfolioStrategyApp
 # from vnpy.app.script_trader import ScriptTraderApp
 # from vnpy.app.market_radar import MarketRadarApp
-# from vnpy.app.chart_wizard import ChartWizardApp
+from vnpy.app.chart_wizard import ChartWizardApp
 # from vnpy.app.rpc_service import RpcServiceApp
 # from vnpy.app.excel_rtd import ExcelRtdApp
 # from vnpy.app.data_manager import DataManagerApp
@@ -124,7 +124,7 @@ def main():
     # main_engine.add_app(PortfolioStrategyApp)
     # main_engine.add_app(ScriptTraderApp)
     # main_engine.add_app(MarketRadarApp)
-    # main_engine.add_app(ChartWizardApp)
+    main_engine.add_app(ChartWizardApp)
     # main_engine.add_app(RpcServiceApp)
     # main_engine.add_app(ExcelRtdApp)
     # main_engine.add_app(DataManagerApp)

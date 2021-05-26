@@ -355,7 +355,7 @@ class BaseMonitor(QtWidgets.QTableWidget):
         Clear table data
         """
         self.cells.clear()
-        self.clear()
+        self.setRowCount(0)
 
     def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
         """
