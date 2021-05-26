@@ -475,7 +475,7 @@ class BollItem(CandleItem):
             bars = self._manager.get_all_bars()
             close_data = [bar.close_price for bar in bars]
             mid_array = talib.SMA(np.array(close_data), self.boll_window)
-            std_array = talib.STDDEV(self.close, self.boll_window, nbdev=1)
+            std_array = talib.STDDEV(np.array(close_data), self.boll_window, nbdev=1)
             up_array = mid_array + std_array * self.boll_dev
             dn_array = mid_array - std_array * self.boll_dev
 
@@ -488,12 +488,12 @@ class BollItem(CandleItem):
 
         # Else calculate new value
         close_data = []
-        for n in range(ix - self.sma_window, ix + 1):
+        for n in range(ix - self.boll_window, ix + 1):
             bar = self._manager.get_bar(n)
             close_data.append(bar.close_price)
 
         mid_array = talib.SMA(np.array(close_data), self.boll_window)
-        std_array = talib.STDDEV(self.close, self.boll_window, nbdev=1)
+        std_array = talib.STDDEV(np.array(close_data), self.boll_window, nbdev=1)
         up_array = mid_array + std_array * self.boll_dev
         dn_array = mid_array - std_array * self.boll_dev
         boll_value = up_array[-1], mid_array[-1], dn_array[-1]
