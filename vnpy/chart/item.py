@@ -919,14 +919,14 @@ class TradeItem(ScatterPlotItem, CandleItem):
                 }
 
                 if trade.direction == Direction.LONG:
-                    scatter_symbol = "t1"  # Up arrow
+                    scatter_symbol = "arrow_up"  # Up arrow
                 else:
-                    scatter_symbol = "t"  # Down arrow
+                    scatter_symbol = "arrow_down"  # Down arrow
 
                 if trade.offset == Offset.OPEN:
-                    scatter_brush = pg.mkBrush((255, 255, 0))  # Yellow
+                    scatter_brush = pg.mkBrush((255, 0, 0))  # Red
                 else:
-                    scatter_brush = pg.mkBrush((0, 0, 255))  # Blue
+                    scatter_brush = pg.mkBrush((0, 255, 0))  # Green
 
                 scatter["symbol"] = scatter_symbol
                 scatter["brush"] = scatter_brush
@@ -1008,7 +1008,7 @@ class OrderItem(ScatterPlotItem, CandleItem):
                 scatter = {
                     "pos": (ix, show_price),
                     "data": 1,
-                    "size": 10,
+                    "size": 12,
                     "pen": pg.mkPen((255, 255, 255)),
                 }
 
@@ -1023,9 +1023,9 @@ class OrderItem(ScatterPlotItem, CandleItem):
                     scatter_brush = pg.mkBrush((0, 255, 0))  # Green
 
                 if order.status in (Status.REJECTED, Status.CANCELLED):
-                    scatter_symbol = "x"  # Cross
+                    scatter_symbol = "x"   # Cross
                 elif order.status == Status.PARTTRADED:
-                    scatter_brush = pg.mkBrush((0, 128, 128))  # Yellow
+                    scatter_brush = pg.mkBrush((0, 0, 255))  # Blue
 
                 scatter["symbol"] = scatter_symbol
                 scatter["brush"] = scatter_brush
