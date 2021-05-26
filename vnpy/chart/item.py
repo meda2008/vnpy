@@ -889,10 +889,10 @@ class TradeItem(ScatterPlotItem, CandleItem):
         od = OrderedDict(sorted(self._manager._datetime_index_map.items(), key=lambda t: t[0], reverse=True))
         idx = self._manager.get_count() - 1
         for dt, ix in od.items():
-            # print(f"dt={dt}\ntrade.datetime {trade.datetime}")
+            if trade.datetime is None:
+                break
             dt1 = CHINA_TZ.localize(datetime.combine(dt.date(), dt.time()))
             if dt1 <= trade.datetime:
-                # print(f"【dt={dt},dt1={dt1},dt2={trade.datetime} ix={ix}】")
                 idx = ix
                 break
 
@@ -905,8 +905,6 @@ class TradeItem(ScatterPlotItem, CandleItem):
         if draw:
             self.set_scatter_data()
             self.update()
-
-        # print(f"add_trade idx={idx} trade={trade}")
 
     def set_scatter_data(self):
         """ 把成交单列表绘制到ScatterPlotItem上 """
@@ -975,10 +973,10 @@ class OrderItem(ScatterPlotItem, CandleItem):
         od = OrderedDict(sorted(self._manager._datetime_index_map.items(), key=lambda t: t[0], reverse=True))
         idx = self._manager.get_count() - 1
         for dt, ix in od.items():
-            # print(f"dt={dt}\ntrade.datetime {trade.datetime}")
+            if order.datetime is None:
+                break
             dt1 = CHINA_TZ.localize(datetime.combine(dt.date(), dt.time()))
             if dt1 <= order.datetime:
-                # print(f"【dt={dt},dt1={dt1},dt2={order.datetime} ix={ix}】")
                 idx = ix
                 break
 
@@ -1010,19 +1008,24 @@ class OrderItem(ScatterPlotItem, CandleItem):
                 scatter = {
                     "pos": (ix, show_price),
                     "data": 1,
-                    "size": 14,
+                    "size": 10,
                     "pen": pg.mkPen((255, 255, 255)),
                 }
 
                 if order.direction == Direction.LONG:
-                    scatter_symbol = "t1"  # Up arrow
+                    scatter_symbol = "t1"  # Triangle Up
                 else:
-                    scatter_symbol = "t"  # Down arrow
+                    scatter_symbol = "t"   # Triangle Down
 
                 if order.offset == Offset.OPEN:
-                    scatter_brush = pg.mkBrush((0, 128, 128))  # Yellow
+                    scatter_brush = pg.mkBrush((255, 0, 0))  # Red
                 else:
-                    scatter_brush = pg.mkBrush((128, 128, 0))  # Blue
+                    scatter_brush = pg.mkBrush((0, 255, 0))  # Green
+
+                if order.status in (Status.REJECTED, Status.CANCELLED):
+                    scatter_symbol = "x"  # Cross
+                elif order.status == Status.PARTTRADED:
+                    scatter_brush = pg.mkBrush((0, 128, 128))  # Yellow
 
                 scatter["symbol"] = scatter_symbol
                 scatter["brush"] = scatter_brush
