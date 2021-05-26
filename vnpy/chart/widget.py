@@ -3,15 +3,21 @@ from typing import List, Dict, Type
 import pyqtgraph as pg
 
 from vnpy.trader.ui import QtGui, QtWidgets, QtCore
-from vnpy.trader.object import BarData
-
-from .manager import BarManager
-from .base import (
-    GREY_COLOR, WHITE_COLOR, CURSOR_COLOR, BLACK_COLOR,
-    to_int, NORMAL_FONT
+from vnpy.trader.object import (
+    BarData, OrderData, TradeData,
 )
+
+from .item import (
+    ChartItem, VolumeItem, CandleItem, LineItem,
+    BollItem, OrderItem, TradeItem,
+)
+
+from .base import (
+    GREY_COLOR, WHITE_COLOR, CURSOR_COLOR,
+    BLACK_COLOR, NORMAL_FONT, to_int,
+)
+from .manager import BarManager
 from .axis import DatetimeAxis
-from .item import ChartItem
 
 
 pg.setConfigOptions(antialias=True)
@@ -34,8 +40,8 @@ class ChartWidget(pg.PlotWidget):
         self._first_plot: pg.PlotItem = None
         self._cursor: ChartCursor = None
 
-        self._right_ix: int = 0                     # Index of most right data
-        self._bar_count: int = self.MIN_BAR_COUNT   # Total bar visible in chart
+        self._right_ix: int = 0  # Index of most right data
+        self._bar_count: int = self.MIN_BAR_COUNT  # Total bar visible in chart
 
         self._init_ui()
 
@@ -60,11 +66,11 @@ class ChartWidget(pg.PlotWidget):
                 self, self._manager, self._plots, self._item_plot_map)
 
     def add_plot(
-        self,
-        plot_name: str,
-        minimum_height: int = 80,
-        maximum_height: int = None,
-        hide_x_axis: bool = False
+            self,
+            plot_name: str,
+            minimum_height: int = 80,
+            maximum_height: int = None,
+            hide_x_axis: bool = False
     ) -> None:
         """
         Add plot area.
@@ -112,10 +118,10 @@ class ChartWidget(pg.PlotWidget):
         self._layout.addItem(plot)
 
     def add_item(
-        self,
-        item_class: Type[ChartItem],
-        item_name: str,
-        plot_name: str
+            self,
+            item_class: Type[ChartItem],
+            item_name: str,
+            plot_name: str
     ):
         """
         Add chart item.
@@ -127,6 +133,12 @@ class ChartWidget(pg.PlotWidget):
         plot.addItem(item)
 
         self._item_plot_map[item] = plot
+
+    def get_item(self, item_name: str):
+        """
+        Get chart item by item's name.
+        """
+        return self._items.get(item_name, None)
 
     def get_plot(self, plot_name: str) -> pg.PlotItem:
         """
@@ -307,11 +319,11 @@ class ChartCursor(QtCore.QObject):
     """"""
 
     def __init__(
-        self,
-        widget: ChartWidget,
-        manager: BarManager,
-        plots: Dict[str, pg.GraphicsObject],
-        item_plot_map: Dict[ChartItem, pg.GraphicsObject]
+            self,
+            widget: ChartWidget,
+            manager: BarManager,
+            plots: Dict[str, pg.GraphicsObject],
+            item_plot_map: Dict[ChartItem, pg.GraphicsObject]
     ):
         """"""
         super().__init__()
@@ -533,3 +545,90 @@ class ChartCursor(QtCore.QObject):
 
         for label in list(self._y_labels.values()) + [self._x_label]:
             label.hide()
+
+
+class CompositeChartWidget(ChartWidget):
+    """"""
+
+    def __init__(self, parent: QtWidgets.QWidget = None):
+        """"""
+        super().__init__(parent)
+
+        self.orders: List[str, OrderData] = {}
+        self.trades: List[str, TradeData] = {}
+
+        self.init_ui()
+
+    def init_ui(self):
+        """"""
+        self.add_plot("candle", hide_x_axis=True)
+        self.add_item(CandleItem, "candle", "candle")
+        self.add_item(LineItem, "line", "candle")
+        self.add_item(BollItem, "boll", "candle")
+        self.add_item(OrderItem, "order", "candle")
+        self.add_item(TradeItem, "trade", "candle")
+        self.add_plot("volume", maximum_height=200)
+        self.add_item(VolumeItem, "volume", "volume")
+        self.add_last_price_line()
+        self.add_cursor()
+
+    def add_last_price_line(self):
+        """"""
+        color = (255, 255, 255)
+        plot = list(self._plots.values())[0]
+        self.last_price_line = pg.InfiniteLine(
+            angle=0,
+            movable=False,
+            label="{value:.1f}",
+            pen=pg.mkPen(color, width=1),
+            labelOpts={
+                "color": color,
+                "position": 1,
+                "anchors": [(1, 1), (1, 1)]
+            }
+        )
+        self.last_price_line.label.setFont(NORMAL_FONT)
+        plot.addItem(self.last_price_line)
+
+    def update_history(self, history: List[BarData]) -> None:
+        """
+        Update a list of bar data.
+        """
+        super().update_history(history)
+
+        self.update_last_price_line(history[-1])
+
+    def update_bar(self, bar: BarData) -> None:
+        """
+        Update single bar data.
+        """
+        super().update_bar(bar)
+
+        self.update_last_price_line(bar)
+
+    def update_last_price_line(self, bar: BarData) -> None:
+        """"""
+        if self.last_price_line:
+            self.last_price_line.setValue(bar.close_price)
+
+    def add_orders(self, orders: List[OrderData]) -> None:
+        """
+        增加委托单列表到委托单绘图部件
+        """
+        for order in orders:
+            self.orders[order.orderid] = order
+
+        order_item: OrderItem = self.get_item('order')
+        if order_item:
+            order_item.add_orders(self.orders.values())
+
+    def add_trades(self, trades: List[TradeData]) -> None:
+        """
+        增加成交单列表到委托单绘图部件
+        """
+        for trade in trades:
+            self.trades[trade.tradeid] = trade
+
+        trade_item: TradeItem = self.get_item('trade')
+        if trade_item:
+            trade_item.add_trades(self.trades.values())

@@ -5,11 +5,11 @@ Widget for spread trading.
 from datetime import datetime, timedelta
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import MainEngine
-from vnpy.app.spread_trading import BarData
 from vnpy.trader.database import database_manager
 from vnpy.trader.constant import Exchange, Direction, Offset, Interval
-from vnpy.trader.utility import BarGenerator, ArrayManager
-from vnpy.chart import ChartWidget, VolumeItem, CandleItem
+from vnpy.trader.utility import BarGenerator
+from vnpy.chart import CompositeChartWidget
+
 from vnpy.trader.ui import QtWidgets, QtCore, QtGui
 from vnpy.trader.ui.widget import (
     BaseMonitor, BaseCell,
@@ -584,37 +584,28 @@ class SpreadRemoveDialog(QtWidgets.QDialog):
         self.accept()
 
 
-class SpreadChartWidget(ChartWidget):
+class SpreadChartWidget(CompositeChartWidget):
     """"""
 
-    signal = QtCore.pyqtSignal(Event)
+    signal_bar = QtCore.pyqtSignal(Event)
 
     def __init__(self, spread_engine: SpreadEngine):
         super().__init__()
 
-        self.strategy_engine = spread_engine.strategy_engine
-        self.main_engine = spread_engine.main_engine
-        self.event_engine = spread_engine.event_engine
-        self.bg = BarGenerator(self.on_spread_bar)
-        self.name = None
+        self.spread_engine: SpreadEngine = spread_engine
+        self.main_engine: MainEngine = spread_engine.main_engine
+        self.event_engine: EventEngine = spread_engine.event_engine
+        self.bg: BarGenerator = BarGenerator(self.update_bar)
+        self.name: str = None
 
-        self.init_ui()
         self.register_event()
-
-    def init_ui(self):
-        """"""
-        self.add_plot("candle", hide_x_axis=True)
-        self.add_plot("volume", maximum_height=200)
-        self.add_item(CandleItem, "candle", "candle")
-        self.add_item(VolumeItem, "volume", "volume")
-        self.add_cursor()
 
     def register_event(self):
         """"""
-        self.signal.connect(self.process_event)
+        self.signal_bar.connect(self.process_event)
 
         self.event_engine.register(
-            EVENT_SPREAD_DATA, self.signal.emit
+            EVENT_SPREAD_DATA, self.signal_bar.emit
         )
 
     def process_event(self, event: Event):
@@ -622,11 +613,9 @@ class SpreadChartWidget(ChartWidget):
         spread = event.data
         if spread and spread.name == self.name:
             tick = spread.to_tick()
+            if self.last_price_line:
+                self.last_price_line.setValue(tick.last_price)
             self.bg.update_tick(tick)
-
-    def on_spread_bar(self, bar: BarData):
-        """"""
-        self.update_bar(bar)
 
     def start(self, name: str):
         """"""
@@ -640,7 +629,9 @@ class SpreadChartWidget(ChartWidget):
             interval=Interval.MINUTE,
             start=start,
             end=end)
-        self.update_history(bars)
+        if len(bars) > 0:
+            self.update_history(bars)
+        self.setWindowTitle(name)
         self.show()
 
 
