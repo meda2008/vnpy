@@ -49,6 +49,10 @@ class AlgoWidget(QtWidgets.QWidget):
         """
         self.setMaximumWidth(400)
 
+        self.symbol_completer = QtWidgets.QCompleter(self.algo_engine.vt_symbols)
+        self.symbol_completer.setFilterMode(QtCore.Qt.MatchContains)
+        self.symbol_completer.setCompletionMode(self.symbol_completer.PopupCompletion)
+
         form = QtWidgets.QFormLayout()
 
         for field_name, field_value in self.default_setting.items():
@@ -59,6 +63,10 @@ class AlgoWidget(QtWidgets.QWidget):
                 widget.addItems(field_value)
             else:
                 widget = QtWidgets.QLineEdit()
+                if field_name == "vt_symbol":
+                    widget.setCompleter(self.symbol_completer)
+                    model = self.symbol_completer.model()
+                    model.setStringList(self.algo_engine.vt_symbols)
 
             display_name = NAME_DISPLAY_MAP.get(field_name, field_name)
 

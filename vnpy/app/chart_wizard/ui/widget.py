@@ -47,7 +47,7 @@ class ChartWizardWidget(QtWidgets.QWidget):
         self.tab: QtWidgets.QTabWidget = QtWidgets.QTabWidget()
         self.symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
 
-        self.vt_symbols = [c.vt_symbol.split('.')[0] for c in self.main_engine.get_all_contracts()]
+        self.vt_symbols = [c.vt_symbol for c in self.main_engine.get_all_contracts()]
         self.symbol_completer = QtWidgets.QCompleter(self.vt_symbols)
         self.symbol_completer.setFilterMode(QtCore.Qt.MatchContains)
         self.symbol_completer.setCompletionMode(self.symbol_completer.PopupCompletion)
@@ -161,8 +161,9 @@ class ChartWizardWidget(QtWidgets.QWidget):
 
             chart = self.charts[tick.vt_symbol]
             bar = copy(bg.bar)
-            bar.datetime = bar.datetime.replace(second=0, microsecond=0)
-            chart.update_bar(bar)
+            if bar:
+                bar.datetime = bar.datetime.replace(second=0, microsecond=0)
+                chart.update_bar(bar)
 
     def process_history_event(self, event: Event) -> None:
         """"""
@@ -200,7 +201,7 @@ class ChartWizardWidget(QtWidgets.QWidget):
     def process_contract_event(self, event: Event):
         """"""
         contract = event.data
-        self.vt_symbols.append(contract.vt_symbol.split('.')[0])
+        self.vt_symbols.append(contract.vt_symbol)
 
         model = self.symbol_completer.model()
         model.setStringList(self.vt_symbols)

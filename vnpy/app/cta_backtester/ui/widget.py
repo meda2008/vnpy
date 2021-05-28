@@ -10,6 +10,7 @@ from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtCore, QtWidgets, QtGui
 from vnpy.trader.ui.widget import BaseMonitor, BaseCell, DirectionCell, EnumCell
 from vnpy.trader.ui.editor import CodeEditor
+from vnpy.trader.event import EVENT_CONTRACT
 from vnpy.event import Event, EventEngine
 from vnpy.chart import ChartWidget, CandleItem, VolumeItem
 from vnpy.trader.utility import load_json, save_json
@@ -30,6 +31,7 @@ class BacktesterManager(QtWidgets.QWidget):
     setting_filename = "cta_backtester_setting.json"
 
     signal_log = QtCore.pyqtSignal(Event)
+    signal_contract = QtCore.pyqtSignal(Event)
     signal_backtesting_finished = QtCore.pyqtSignal(Event)
     signal_optimization_finished = QtCore.pyqtSignal(Event)
 
@@ -70,6 +72,12 @@ class BacktesterManager(QtWidgets.QWidget):
         self.class_combo = QtWidgets.QComboBox()
 
         self.symbol_line = QtWidgets.QLineEdit("IF88.CFFEX")
+
+        self.vt_symbols = [c.vt_symbol.split('.')[0] for c in self.main_engine.get_all_contracts()]
+        self.symbol_completer = QtWidgets.QCompleter(self.vt_symbols)
+        self.symbol_completer.setFilterMode(QtCore.Qt.MatchContains)
+        self.symbol_completer.setCompletionMode(self.symbol_completer.PopupCompletion)
+        self.symbol_line.setCompleter(self.symbol_completer)
 
         self.interval_combo = QtWidgets.QComboBox()
         for interval in Interval:
@@ -224,6 +232,8 @@ class BacktesterManager(QtWidgets.QWidget):
         # Code Editor
         self.editor = CodeEditor(self.main_engine, self.event_engine)
 
+        self.showMaximized()
+
     def load_backtesting_setting(self):
         """"""
         setting = load_json(self.setting_filename)
@@ -259,16 +269,22 @@ class BacktesterManager(QtWidgets.QWidget):
     def register_event(self):
         """"""
         self.signal_log.connect(self.process_log_event)
-        self.signal_backtesting_finished.connect(
-            self.process_backtesting_finished_event)
-        self.signal_optimization_finished.connect(
-            self.process_optimization_finished_event)
+        self.signal_contract.connect(self.process_contract_event)
+        self.signal_backtesting_finished.connect(self.process_backtesting_finished_event)
+        self.signal_optimization_finished.connect(self.process_optimization_finished_event)
 
+        self.event_engine.register(EVENT_CONTRACT, self.signal_contract.emit)
         self.event_engine.register(EVENT_BACKTESTER_LOG, self.signal_log.emit)
-        self.event_engine.register(
-            EVENT_BACKTESTER_BACKTESTING_FINISHED, self.signal_backtesting_finished.emit)
-        self.event_engine.register(
-            EVENT_BACKTESTER_OPTIMIZATION_FINISHED, self.signal_optimization_finished.emit)
+        self.event_engine.register(EVENT_BACKTESTER_BACKTESTING_FINISHED, self.signal_backtesting_finished.emit)
+        self.event_engine.register(EVENT_BACKTESTER_OPTIMIZATION_FINISHED, self.signal_optimization_finished.emit)
+
+    def process_contract_event(self, event: Event):
+        """"""
+        contract = event.data
+        self.vt_symbols.append(contract.vt_symbol)
+
+        model = self.symbol_completer.model()
+        model.setStringList(self.vt_symbols)
 
     def process_log_event(self, event: Event):
         """"""

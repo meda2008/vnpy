@@ -1056,6 +1056,7 @@ class ContractManager(QtWidgets.QWidget):
         self.contract_table.verticalHeader().setVisible(False)
         self.contract_table.setEditTriggers(self.contract_table.NoEditTriggers)
         self.contract_table.setAlternatingRowColors(True)
+        self.contract_table.itemDoubleClicked.connect(self.copyto_clipboard)
 
         hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(self.filter_line)
@@ -1094,6 +1095,14 @@ class ContractManager(QtWidgets.QWidget):
                 self.contract_table.setItem(row, column, cell)
 
         self.contract_table.resizeColumnsToContents()
+
+    def copyto_clipboard(self, cell: BaseCell) -> None:
+        """
+        Copy data to clipboard if cell double clicked.
+        """
+        data = cell.get_data()
+        clipboard = QtGui.QGuiApplication.clipboard()
+        clipboard.setText(data.vt_symbol)
 
 
 class AboutDialog(QtWidgets.QDialog):

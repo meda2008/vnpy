@@ -2,7 +2,9 @@
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import BaseEngine, MainEngine
 from vnpy.trader.event import (
-    EVENT_TICK, EVENT_TIMER, EVENT_ORDER, EVENT_TRADE)
+    EVENT_TICK, EVENT_TIMER, EVENT_ORDER,
+    EVENT_TRADE, EVENT_CONTRACT
+)
 from vnpy.trader.constant import (Direction, Offset, OrderType)
 from vnpy.trader.object import (SubscribeRequest, OrderRequest, LogData)
 from vnpy.trader.utility import load_json, save_json, round_to
@@ -36,6 +38,8 @@ class AlgoEngine(BaseEngine):
         self.register_event()
 
         self.genus_client: GenusClient = None
+
+        self.vt_symbols = [c.vt_symbol for c in self.main_engine.get_all_contracts()]
 
     def init_engine(self):
         """"""
@@ -110,6 +114,12 @@ class AlgoEngine(BaseEngine):
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
         self.event_engine.register(EVENT_ORDER, self.process_order_event)
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
+        self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
+
+    def process_contract_event(self, event: Event):
+        """"""
+        contract = event.data
+        self.vt_symbols.append(contract.vt_symbol)
 
     def process_tick_event(self, event: Event):
         """"""
