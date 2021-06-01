@@ -635,7 +635,10 @@ class IbApi(EWrapper):
         """
         Callback of history data update.
         """
-        dt = datetime.strptime(ib_bar.date, "%Y%m%d %H:%M:%S")
+        fmt = "%Y%m%d %H:%M:%S"
+        if len(ib_bar.date) == 8:
+            fmt = "%Y%m%d"
+        dt = datetime.strptime(ib_bar.date, fmt)
         dt = self.local_tz.localize(dt)
 
         bar = BarData(

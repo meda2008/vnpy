@@ -1,8 +1,9 @@
+import math
 from vnpy.trader.constant import Direction
 from vnpy.trader.object import TradeData, OrderData, TickData
 from vnpy.trader.engine import BaseEngine
 from vnpy.app.algo_trading import AlgoTemplate
-import math
+from vnpy.trader.database import database_manager
 
 
 class GridAlgo(AlgoTemplate):
@@ -25,10 +26,10 @@ class GridAlgo(AlgoTemplate):
     ]
 
     def __init__(
-        self,
-        algo_engine: BaseEngine,
-        algo_name: str,
-        setting: dict
+            self,
+            algo_engine: BaseEngine,
+            algo_name: str,
+            setting: dict
     ):
         """"""
         super().__init__(algo_engine, algo_name, setting)
@@ -69,17 +70,13 @@ class GridAlgo(AlgoTemplate):
             self.cancel_all()
 
         # Calculate target volume to buy and sell
-        target_buy_distance = (
-            self.price - self.last_tick.ask_price_1) / self.step_price
-        target_buy_position = math.floor(
-            target_buy_distance) * self.step_volume
+        target_buy_distance = (self.price - self.last_tick.ask_price_1) / self.step_price
+        target_buy_position = math.floor(target_buy_distance) * self.step_volume
         target_buy_volume = target_buy_position - self.pos
 
         # Calculate target volume to sell
-        target_sell_distance = (
-            self.price - self.last_tick.bid_price_1) / self.step_price
-        target_sell_position = math.ceil(
-            target_sell_distance) * self.step_volume
+        target_sell_distance = (self.price - self.last_tick.bid_price_1) / self.step_price
+        target_sell_position = math.ceil(target_sell_distance) * self.step_volume
         target_sell_volume = self.pos - target_sell_position
 
         # Buy when price dropping

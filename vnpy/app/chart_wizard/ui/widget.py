@@ -14,7 +14,7 @@ from vnpy.trader.constant import Interval
 
 from vnpy.app.spread_trading.base import SpreadData, EVENT_SPREAD_DATA
 
-from ..engine import APP_NAME, EVENT_CHART_HISTORY, ChartWizardEngine
+from ..engine import APP_NAME, EVENT_CHART_HISTORY, EVENT_CHART_ORDER, EVENT_CHART_TRADE, ChartWizardEngine
 
 
 class ChartWizardWidget(QtWidgets.QWidget):
@@ -24,6 +24,8 @@ class ChartWizardWidget(QtWidgets.QWidget):
     signal_tick = QtCore.pyqtSignal(Event)
     signal_spread = QtCore.pyqtSignal(Event)
     signal_history = QtCore.pyqtSignal(Event)
+    signal_his_order = QtCore.pyqtSignal(Event)
+    signal_his_trade = QtCore.pyqtSignal(Event)
     signal_contract = QtCore.pyqtSignal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
@@ -100,24 +102,40 @@ class ChartWizardWidget(QtWidgets.QWidget):
             if not contract:
                 return
 
-        # Create new chart
         self.bgs[vt_symbol] = BarGenerator(self.on_bar)
 
+        # Create new chart
         chart = self.create_chart()
         self.charts[vt_symbol] = chart
 
         self.tab.addTab(chart, vt_symbol)
 
-        # Query history data
         end = datetime.now(get_localzone())
         start = end - timedelta(days=5)
 
+        # Query history data
         self.chart_engine.query_history(
             vt_symbol,
             Interval.MINUTE,
             start,
             end
         )
+
+        # Query history order
+        if hasattr(chart, 'add_order'):
+            self.chart_engine.query_order(
+                vt_symbol,
+                start,
+                end
+            )
+
+        # Query history trade
+        if hasattr(chart, 'add_trade'):
+            self.chart_engine.query_trade(
+                vt_symbol,
+                start,
+                end
+            )
 
         self.showMaximized()
 
@@ -128,6 +146,8 @@ class ChartWizardWidget(QtWidgets.QWidget):
         self.signal_tick.connect(self.process_tick_event)
         self.signal_spread.connect(self.process_spread_event)
         self.signal_history.connect(self.process_history_event)
+        self.signal_his_order.connect(self.process_his_order_event)
+        self.signal_his_trade.connect(self.process_his_trade_event)
         self.signal_contract.connect(self.process_contract_event)
 
         self.event_engine.register(EVENT_ORDER, self.signal_order.emit)
@@ -135,6 +155,8 @@ class ChartWizardWidget(QtWidgets.QWidget):
         self.event_engine.register(EVENT_TICK, self.signal_tick.emit)
         self.event_engine.register(EVENT_SPREAD_DATA, self.signal_spread.emit)
         self.event_engine.register(EVENT_CHART_HISTORY, self.signal_history.emit)
+        self.event_engine.register(EVENT_CHART_ORDER, self.signal_his_order.emit)
+        self.event_engine.register(EVENT_CHART_TRADE, self.signal_his_trade.emit)
         self.event_engine.register(EVENT_CONTRACT, self.signal_contract.emit)
 
     def process_order_event(self, event: Event) -> None:
@@ -183,6 +205,22 @@ class ChartWizardWidget(QtWidgets.QWidget):
                 contract.exchange
             )
             self.main_engine.subscribe(req, contract.gateway_name)
+
+    def process_his_order_event(self, event: Event) -> None:
+        """"""
+        orders: List[OrderData] = event.data
+        if len(orders) > 0:
+            chart = self.charts[orders[0].vt_symbol]
+            if hasattr(chart, 'add_orders'):
+                chart.add_orders(orders)
+
+    def process_his_trade_event(self, event: Event) -> None:
+        """"""
+        trades: List[OrderData] = event.data
+        if len(trades) > 0:
+            chart = self.charts[trades[0].vt_symbol]
+            if hasattr(chart, 'add_trades'):
+                chart.add_trades(trades)
 
     def process_spread_event(self, event: Event):
         """"""
