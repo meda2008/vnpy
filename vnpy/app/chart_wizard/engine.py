@@ -10,7 +10,7 @@ from vnpy.trader.constant import Interval
 from vnpy.trader.object import HistoryRequest, ContractData, OrderData, TradeData
 from vnpy.trader.rqdata import rqdata_client
 from vnpy.trader.utility import extract_vt_symbol
-from vnpy.trader.database import database_manager
+from vnpy.trader.database import database_manager, DB_TZ
 
 APP_NAME = "ChartWizard"
 
@@ -38,11 +38,15 @@ class ChartWizardEngine(BaseEngine):
     def process_order_event(self, event: Event) -> None:
         """"""
         order = event.data
+        if order.datetime is None:
+            order.datetime = datetime.now(DB_TZ)
         database_manager.save_order([order])
 
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade = event.data
+        if trade.datetime is None:
+            trade.datetime = datetime.now(DB_TZ)
         database_manager.save_trade([trade])
 
     def query_history(
