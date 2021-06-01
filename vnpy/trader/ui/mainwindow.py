@@ -27,7 +27,7 @@ from .widget import (
 )
 from .editor import CodeEditor
 from ..engine import MainEngine
-from ..utility import get_icon_path, TRADER_DIR
+from ..utility import load_json, get_icon_path, TRADER_DIR
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -100,6 +100,17 @@ class MainWindow(QtWidgets.QMainWindow):
         for name in gateway_names:
             func = partial(self.connect, name)
             self.add_menu_action(sys_menu, f"连接{name}", "connect.ico", func)
+
+        def connect_all():
+            for gn in self.main_engine.get_all_gateway_names():
+                try:
+                    fn = f"connect_{gn.lower()}.json"
+                    setting = load_json(fn)
+                    self.main_engine.connect(setting, gn)
+                except Exception as e:
+                    print(e)
+
+        self.add_menu_action(sys_menu, "全部连接", "connect.ico", connect_all)
 
         sys_menu.addSeparator()
 
@@ -194,11 +205,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToolBar(QtCore.Qt.LeftToolBarArea, self.toolbar)
 
     def add_menu_action(
-        self,
-        menu: QtWidgets.QMenu,
-        action_name: str,
-        icon_name: str,
-        func: Callable,
+            self,
+            menu: QtWidgets.QMenu,
+            action_name: str,
+            icon_name: str,
+            func: Callable,
     ) -> None:
         """"""
         icon = QtGui.QIcon(get_icon_path(__file__, icon_name))
@@ -210,10 +221,10 @@ class MainWindow(QtWidgets.QMainWindow):
         menu.addAction(action)
 
     def add_toolbar_action(
-        self,
-        action_name: str,
-        icon_name: str,
-        func: Callable,
+            self,
+            action_name: str,
+            icon_name: str,
+            func: Callable,
     ) -> None:
         """"""
         icon = QtGui.QIcon(get_icon_path(__file__, icon_name))
@@ -225,10 +236,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toolbar.addAction(action)
 
     def create_dock(
-        self,
-        widget_class: QtWidgets.QWidget,
-        name: str,
-        area: int
+            self,
+            widget_class: QtWidgets.QWidget,
+            name: str,
+            area: int
     ) -> Tuple[QtWidgets.QWidget, QtWidgets.QDockWidget]:
         """
         Initialize a dock widget.

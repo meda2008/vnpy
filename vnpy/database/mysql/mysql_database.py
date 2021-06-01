@@ -155,6 +155,7 @@ class DbOrderData(Model):
     traded: float = FloatField()
     status: str = CharField()
     reference: str = CharField()
+    gateway_name: str = CharField()
 
     class Meta:
         database = db
@@ -176,6 +177,7 @@ class DbTradeData(Model):
     offset: str = CharField()
     price: float = FloatField()
     volume: float = FloatField()
+    gateway_name: str = CharField()
 
     class Meta:
         database = db
@@ -277,8 +279,8 @@ class MysqlDatabase(BaseDatabase):
             d["offset"] = d["offset"].value
             d["status"] = d["status"].value
             d["type"] = d["type"].value
-            d.pop("gateway_name")
             d.pop("vt_symbol")
+            d.pop("vt_orderid")
             data.append(d)
 
         # Upsert data into database
@@ -297,8 +299,9 @@ class MysqlDatabase(BaseDatabase):
             d["exchange"] = d["exchange"].value
             d["direction"] = d["direction"].value
             d["offset"] = d["offset"].value
-            d.pop("gateway_name")
             d.pop("vt_symbol")
+            d.pop("vt_orderid")
+            d.pop("vt_tradeid")
             data.append(d)
 
         # Upsert data into database
