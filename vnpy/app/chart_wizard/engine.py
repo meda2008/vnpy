@@ -1,5 +1,5 @@
 """"""
-from typing import List
+from copy import copy
 from datetime import datetime
 from threading import Thread
 
@@ -37,14 +37,14 @@ class ChartWizardEngine(BaseEngine):
 
     def process_order_event(self, event: Event) -> None:
         """"""
-        order = event.data
+        order: OrderData = copy(event.data)
         if order.datetime is None:
             order.datetime = datetime.now(DB_TZ)
         database_manager.save_order([order])
 
     def process_trade_event(self, event: Event) -> None:
         """"""
-        trade = event.data
+        trade: TradeData = copy(event.data)
         if trade.datetime is None:
             trade.datetime = datetime.now(DB_TZ)
         database_manager.save_trade([trade])
