@@ -43,7 +43,8 @@ db = PeeweeMySQLDatabase(
     user=SETTINGS["database.user"],
     password=SETTINGS["database.password"],
     host=SETTINGS["database.host"],
-    port=SETTINGS["database.port"]
+    port=SETTINGS["database.port"],
+    charset=SETTINGS.get("database.charset", "utf8")
 )
 
 
