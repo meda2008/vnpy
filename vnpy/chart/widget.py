@@ -62,8 +62,7 @@ class ChartWidget(pg.PlotWidget):
     def add_cursor(self) -> None:
         """"""
         if not self._cursor:
-            self._cursor = ChartCursor(
-                self, self._manager, self._plots, self._item_plot_map)
+            self._cursor = ChartCursor(self, self._manager, self._plots, self._item_plot_map)
 
     def add_plot(
             self,

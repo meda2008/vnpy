@@ -121,22 +121,6 @@ class ChartWizardWidget(QtWidgets.QWidget):
             end
         )
 
-        # Query history order
-        if hasattr(chart, 'add_order'):
-            self.chart_engine.query_order(
-                vt_symbol,
-                start,
-                end
-            )
-
-        # Query history trade
-        if hasattr(chart, 'add_trade'):
-            self.chart_engine.query_trade(
-                vt_symbol,
-                start,
-                end
-            )
-
         self.showMaximized()
 
     def register_event(self) -> None:
@@ -196,6 +180,25 @@ class ChartWizardWidget(QtWidgets.QWidget):
         bar = history[0]
         chart = self.charts[bar.vt_symbol]
         chart.update_history(history)
+
+        end = datetime.now(get_localzone())
+        start = end - timedelta(days=5)
+
+        # Query history order
+        if hasattr(chart, 'add_orders'):
+            self.chart_engine.query_order(
+                bar.vt_symbol,
+                start,
+                end
+            )
+
+        # Query history trade
+        if hasattr(chart, 'add_trades'):
+            self.chart_engine.query_trade(
+                bar.vt_symbol,
+                start,
+                end
+            )
 
         # Subscribe following data update
         contract = self.main_engine.get_contract(bar.vt_symbol)
