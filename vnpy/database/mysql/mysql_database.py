@@ -161,6 +161,7 @@ class DbOrderData(Model):
     class Meta:
         database = db
         indexes = ((("symbol", "exchange", "datetime", "orderid"), True),)
+        table_settings = "DEFAULT CHARSET=utf8"
 
 
 class DbTradeData(Model):
@@ -183,6 +184,7 @@ class DbTradeData(Model):
     class Meta:
         database = db
         indexes = ((("symbol", "exchange", "datetime", "tradeid"), True),)
+        table_settings = "DEFAULT CHARSET=utf8"
 
 
 class MysqlDatabase(BaseDatabase):
