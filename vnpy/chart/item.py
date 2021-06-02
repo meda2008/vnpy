@@ -962,8 +962,7 @@ class OrderItem(ScatterPlotItem, CandleItem):
     def add_orders(self, orders: List[OrderData]):
         """ 增加委托单列表到OrderItem """
         for order in orders:
-            if order.datetime:
-                self.add_order(order)
+            self.add_order(order)
 
         self.set_scatter_data()
         self.update()
@@ -1030,7 +1029,6 @@ class OrderItem(ScatterPlotItem, CandleItem):
                 scatter["symbol"] = scatter_symbol
                 scatter["brush"] = scatter_brush
                 scatter_datas.append(scatter)
-
         self.setData(scatter_datas)
 
     def get_info_text(self, ix: int) -> str:
