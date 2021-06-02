@@ -13,8 +13,20 @@ from mongoengine import (
 )
 from mongoengine.errors import DoesNotExist
 
-from vnpy.trader.constant import Exchange, Interval
-from vnpy.trader.object import BarData, TickData
+from vnpy.trader.constant import (
+    Exchange,
+    Interval,
+    OrderType,
+    Direction,
+    Offset,
+    Status
+)
+from vnpy.trader.object import (
+    BarData,
+    TickData,
+    OrderData,
+    TradeData
+)
 from vnpy.trader.database import (
     BaseDatabase,
     BarOverview,
@@ -124,6 +136,59 @@ class DbBarOverview(Document):
     }
 
 
+class DbOrderData(Document):
+    """"""
+
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    orderid: str = StringField()
+    type: str = StringField()
+    direction: str = StringField()
+    offset: str = StringField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    traded: float = FloatField()
+    status: str = StringField()
+    reference: str = StringField()
+    gateway_name: str = StringField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime", "orderid"),
+                "unique": True,
+            }
+        ],
+    }
+
+
+class DbTradeData(Document):
+    """"""
+
+    symbol: str = StringField()
+    exchange: str = StringField()
+    datetime: datetime = DateTimeField()
+
+    orderid: str = StringField()
+    tradeid: str = StringField()
+    direction: str = StringField()
+    offset: str = StringField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    gateway_name: str = StringField()
+
+    meta = {
+        "indexes": [
+            {
+                "fields": ("symbol", "exchange", "datetime", "tradeid"),
+                "unique": True,
+            }
+        ],
+    }
+
+
 class MongodbDatabase(BaseDatabase):
     """"""
 
@@ -222,6 +287,55 @@ class MongodbDatabase(BaseDatabase):
                 datetime=d["datetime"],
             ).update_one(upsert=True, **param)
 
+    def save_order(self, orders: List[OrderData]) -> bool:
+        """"""
+        data = []
+
+        for order in orders:
+            order.datetime = convert_tz(order.datetime)
+
+            d = order.__dict__
+            d["exchange"] = d["exchange"].value
+            d["direction"] = d["direction"].value
+            d["offset"] = d["offset"].value
+            d["status"] = d["status"].value
+            d["type"] = d["type"].value
+            d.pop("vt_symbol")
+            d.pop("vt_orderid")
+            data.append(d)
+            param = to_update_param(d)
+
+            DbOrderData.objects(
+                symbol=d["symbol"],
+                exchange=d["exchange"],
+                datetime=d["datetime"],
+                orderid=d["orderid"],
+            ).update_one(upsert=True, **param)
+
+    def save_trade(self, trades: List[TradeData]) -> bool:
+        """"""
+        data = []
+
+        for trade in trades:
+            trade.datetime = convert_tz(trade.datetime)
+
+            d = trade.__dict__
+            d["exchange"] = d["exchange"].value
+            d["direction"] = d["direction"].value
+            d["offset"] = d["offset"].value
+            d.pop("vt_symbol")
+            d.pop("vt_orderid")
+            d.pop("vt_tradeid")
+            data.append(d)
+            param = to_update_param(d)
+
+            DbTradeData.objects(
+                symbol=d["symbol"],
+                exchange=d["exchange"],
+                datetime=d["datetime"],
+                tradeid=d["tradeid"],
+            ).update_one(upsert=True, **param)
+
     def load_bar_data(
         self,
         symbol: str,
@@ -276,6 +390,62 @@ class MongodbDatabase(BaseDatabase):
             ticks.append(db_tick)
 
         return ticks
+
+    def load_order(
+        self,
+        symbol: str,
+        exchange: Exchange,
+        start: datetime,
+        end: datetime
+    ) -> List[OrderData]:
+        """"""
+        s: QuerySet = DbOrderData.objects(
+            symbol=symbol,
+            exchange=exchange.value,
+            datetime__gte=convert_tz(start),
+            datetime__lte=convert_tz(end),
+        )
+
+        vt_symbol = f"{symbol}.{exchange.value}"
+        orders: List[OrderData] = []
+        for db_order in s:
+            db_order.datetime = DB_TZ.localize(db_order.datetime)
+            db_order.exchange = Exchange(db_order.exchange)
+            db_order.direction = Direction(db_order.direction)
+            db_order.offset = Offset(db_order.offset)
+            db_order.type = OrderType(db_order.type)
+            db_order.status = Status(db_order.status)
+            db_order.vt_symbol = vt_symbol
+            orders.append(db_order)
+
+        return orders
+
+    def load_trade(
+        self,
+        symbol: str,
+        exchange: Exchange,
+        start: datetime,
+        end: datetime
+    ) -> List[TradeData]:
+        """"""
+        s: QuerySet = DbTradeData.objects(
+            symbol=symbol,
+            exchange=exchange.value,
+            datetime__gte=convert_tz(start),
+            datetime__lte=convert_tz(end),
+        )
+
+        vt_symbol = f"{symbol}.{exchange.value}"
+        trades: List[TradeData] = []
+        for db_trade in s:
+            db_trade.datetime = DB_TZ.localize(db_trade.datetime)
+            db_trade.exchange = Exchange(db_trade.exchange)
+            db_trade.direction = Direction(db_trade.direction)
+            db_trade.offset = Offset(db_trade.offset)
+            db_trade.vt_symbol = vt_symbol
+            trades.append(db_trade)
+
+        return trades
 
     def delete_bar_data(
         self,

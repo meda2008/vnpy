@@ -15,8 +15,20 @@ from peewee import (
     fn
 )
 
-from vnpy.trader.constant import Exchange, Interval
-from vnpy.trader.object import BarData, TickData
+from vnpy.trader.constant import (
+    Exchange,
+    Interval,
+    OrderType,
+    Direction,
+    Offset,
+    Status
+)
+from vnpy.trader.object import (
+    BarData,
+    TickData,
+    OrderData,
+    TradeData
+)
 from vnpy.trader.utility import get_file_path
 from vnpy.trader.database import (
     BaseDatabase,
@@ -35,9 +47,9 @@ class DbBarData(Model):
 
     id = AutoField()
 
-    symbol: str = CharField()
+    symbol: str = CharField(index=True)
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: datetime = DateTimeField(index=True)
     interval: str = CharField()
 
     volume: float = FloatField()
@@ -57,9 +69,9 @@ class DbTickData(Model):
 
     id = AutoField()
 
-    symbol: str = CharField()
+    symbol: str = CharField(index=True)
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: datetime = DateTimeField(index=True)
 
     name: str = CharField()
     volume: float = FloatField()
@@ -120,6 +132,55 @@ class DbBarOverview(Model):
         indexes = ((("symbol", "exchange", "interval"), True),)
 
 
+class DbOrderData(Model):
+    """"""
+
+    id = AutoField()
+
+    symbol: str = CharField(index=True)
+    exchange: str = CharField()
+    datetime: datetime = DateTimeField(index=True)
+
+    orderid: str = CharField(index=True)
+    type: str = CharField()
+    direction: str = CharField()
+    offset: str = CharField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    traded: float = FloatField()
+    status: str = CharField()
+    reference: str = CharField()
+    gateway_name: str = CharField()
+
+    class Meta:
+        database = db
+        indexes = ((("symbol", "exchange", "datetime", "orderid"), True),)
+        table_settings = "DEFAULT CHARSET=utf8"
+
+
+class DbTradeData(Model):
+    """"""
+
+    id = AutoField()
+
+    symbol: str = CharField(index=True)
+    exchange: str = CharField()
+    datetime: datetime = DateTimeField(index=True)
+
+    orderid: str = CharField(index=True)
+    tradeid: str = CharField(index=True)
+    direction: str = CharField()
+    offset: str = CharField()
+    price: float = FloatField()
+    volume: float = FloatField()
+    gateway_name: str = CharField()
+
+    class Meta:
+        database = db
+        indexes = ((("symbol", "exchange", "datetime", "tradeid"), True),)
+        table_settings = "DEFAULT CHARSET=utf8"
+
+
 class SqliteDatabase(BaseDatabase):
     """"""
 
@@ -127,7 +188,7 @@ class SqliteDatabase(BaseDatabase):
         """"""
         self.db = db
         self.db.connect()
-        self.db.create_tables([DbBarData, DbTickData, DbBarOverview])
+        self.db.create_tables([DbBarData, DbTickData, DbBarOverview, DbOrderData, DbTradeData])
 
     def save_bar_data(self, bars: List[BarData]) -> bool:
         """"""
@@ -202,6 +263,49 @@ class SqliteDatabase(BaseDatabase):
             for c in chunked(data, 10):
                 DbTickData.insert_many(c).on_conflict_replace().execute()
 
+    def save_order(self, orders: List[OrderData]) -> bool:
+        """"""
+        data = []
+
+        for order in orders:
+            order.datetime = convert_tz(order.datetime)
+
+            d = order.__dict__
+            d["exchange"] = d["exchange"].value
+            d["direction"] = d["direction"].value
+            d["offset"] = d["offset"].value
+            d["status"] = d["status"].value
+            d["type"] = d["type"].value
+            d.pop("vt_symbol")
+            d.pop("vt_orderid")
+            data.append(d)
+
+        # Upsert data into database
+        with self.db.atomic():
+            for c in chunked(data, 50):
+                DbOrderData.insert_many(c).on_conflict_replace().execute()
+
+    def save_trade(self, trades: List[TradeData]) -> bool:
+        """"""
+        data = []
+
+        for trade in trades:
+            trade.datetime = convert_tz(trade.datetime)
+
+            d = trade.__dict__
+            d["exchange"] = d["exchange"].value
+            d["direction"] = d["direction"].value
+            d["offset"] = d["offset"].value
+            d.pop("vt_symbol")
+            d.pop("vt_orderid")
+            d.pop("vt_tradeid")
+            data.append(d)
+
+        # Upsert data into database
+        with self.db.atomic():
+            for c in chunked(data, 50):
+                DbTradeData.insert_many(c).on_conflict_replace().execute()
+
     def load_bar_data(
         self,
         symbol: str,
@@ -260,6 +364,66 @@ class SqliteDatabase(BaseDatabase):
             ticks.append(db_tick)
 
         return ticks
+
+    def load_order(
+        self,
+        symbol: str,
+        exchange: Exchange,
+        start: datetime,
+        end: datetime
+    ) -> List[OrderData]:
+        """"""
+        s: ModelSelect = (
+            DbOrderData.select().where(
+                (DbOrderData.symbol == symbol)
+                & (DbOrderData.exchange == exchange.value)
+                & (DbOrderData.datetime >= start)
+                & (DbOrderData.datetime <= end)
+            ).order_by(DbOrderData.datetime)
+        )
+
+        vt_symbol = f"{symbol}.{exchange.value}"
+        orders: List[OrderData] = []
+        for db_order in s:
+            db_order.datetime = DB_TZ.localize(db_order.datetime)
+            db_order.exchange = Exchange(db_order.exchange)
+            db_order.direction = Direction(db_order.direction)
+            db_order.offset = Offset(db_order.offset)
+            db_order.type = OrderType(db_order.type)
+            db_order.status = Status(db_order.status)
+            db_order.vt_symbol = vt_symbol
+            orders.append(db_order)
+
+        return orders
+
+    def load_trade(
+        self,
+        symbol: str,
+        exchange: Exchange,
+        start: datetime,
+        end: datetime
+    ) -> List[TradeData]:
+        """"""
+        s: ModelSelect = (
+            DbTradeData.select().where(
+                (DbTradeData.symbol == symbol)
+                & (DbTradeData.exchange == exchange.value)
+                & (DbTradeData.datetime >= start)
+                & (DbTradeData.datetime <= end)
+            ).order_by(DbTradeData.datetime)
+        )
+
+        vt_symbol = f"{symbol}.{exchange.value}"
+        trades: List[TradeData] = []
+        for db_trade in s:
+            db_trade.datetime = DB_TZ.localize(db_trade.datetime)
+            db_trade.exchange = Exchange(db_trade.exchange)
+            db_trade.direction = Direction(db_trade.direction)
+            db_trade.offset = Offset(db_trade.offset)
+            db_trade.vt_symbol = vt_symbol
+            trades.append(db_trade)
+
+        return trades
 
     def delete_bar_data(
         self,

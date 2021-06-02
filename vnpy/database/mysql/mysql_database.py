@@ -53,9 +53,9 @@ class DbBarData(Model):
 
     id = AutoField()
 
-    symbol: str = CharField()
+    symbol: str = CharField(index=True)
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: datetime = DateTimeField(index=True)
     interval: str = CharField()
 
     volume: float = FloatField()
@@ -75,9 +75,9 @@ class DbTickData(Model):
 
     id = AutoField()
 
-    symbol: str = CharField()
+    symbol: str = CharField(index=True)
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: datetime = DateTimeField(index=True)
 
     name: str = CharField()
     volume: float = FloatField()
@@ -143,11 +143,11 @@ class DbOrderData(Model):
 
     id = AutoField()
 
-    symbol: str = CharField()
+    symbol: str = CharField(index=True)
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: datetime = DateTimeField(index=True)
 
-    orderid: str = CharField()
+    orderid: str = CharField(index=True)
     type: str = CharField()
     direction: str = CharField()
     offset: str = CharField()
@@ -169,12 +169,12 @@ class DbTradeData(Model):
 
     id = AutoField()
 
-    symbol: str = CharField()
+    symbol: str = CharField(index=True)
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: datetime = DateTimeField(index=True)
 
-    orderid: str = CharField()
-    tradeid: str = CharField()
+    orderid: str = CharField(index=True)
+    tradeid: str = CharField(index=True)
     direction: str = CharField()
     offset: str = CharField()
     price: float = FloatField()
@@ -397,7 +397,6 @@ class MysqlDatabase(BaseDatabase):
             db_order.offset = Offset(db_order.offset)
             db_order.type = OrderType(db_order.type)
             db_order.status = Status(db_order.status)
-            db_order.gateway_name = "DB"
             db_order.vt_symbol = vt_symbol
             orders.append(db_order)
 
@@ -427,7 +426,6 @@ class MysqlDatabase(BaseDatabase):
             db_trade.exchange = Exchange(db_trade.exchange)
             db_trade.direction = Direction(db_trade.direction)
             db_trade.offset = Offset(db_trade.offset)
-            db_trade.gateway_name = "DB"
             db_trade.vt_symbol = vt_symbol
             trades.append(db_trade)
 

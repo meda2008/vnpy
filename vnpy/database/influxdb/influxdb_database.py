@@ -5,8 +5,20 @@ import shelve
 
 from influxdb import InfluxDBClient
 
-from vnpy.trader.constant import Exchange, Interval
-from vnpy.trader.object import BarData, TickData
+from vnpy.trader.constant import (
+    Exchange,
+    Interval,
+    OrderType,
+    Direction,
+    Offset,
+    Status
+)
+from vnpy.trader.object import (
+    BarData,
+    TickData,
+    OrderData,
+    TradeData
+)
 from vnpy.trader.database import (
     BaseDatabase,
     BarOverview,
@@ -165,6 +177,71 @@ class InfluxdbDatabase(BaseDatabase):
 
         self.client.write_points(json_body, batch_size=10000)
 
+    def save_order(self, orders: List[OrderData]) -> bool:
+        """"""
+        json_body = []
+
+        vt_symbol = orders[0].vt_symbol
+        orderid = orders[0].orderid
+
+        for order in orders:
+            order.datetime = convert_tz(order.datetime)
+
+            d = {
+                "measurement": "order_data",
+                "tags": {
+                    "vt_symbol": vt_symbol,
+                    "orderid": orderid
+                },
+                "time": order.datetime.isoformat(),
+                "fields": {
+                    "orderid": order.orderid,
+                    "type": order.type,
+                    "direction": order.direction.value,
+                    "offset": order.offset.value,
+                    "price": order.price,
+                    "volume": order.volume,
+                    "traded": order.traded,
+                    "status": order.status.value,
+                    "reference": order.reference,
+                    "gateway_name": order.gateway_name
+                }
+            }
+            json_body.append(d)
+
+        self.client.write_points(json_body, batch_size=10000)
+
+    def save_trade(self, trades: List[TradeData]) -> bool:
+        """"""
+        json_body = []
+
+        vt_symbol = trades[0].vt_symbol
+        tradeid = trades[0].tradeid
+
+        for trade in trades:
+            trade.datetime = convert_tz(trade.datetime)
+
+            d = {
+                "measurement": "trade_data",
+                "tags": {
+                    "vt_symbol": vt_symbol,
+                    "tradeid": tradeid
+                },
+                "time": trade.datetime.isoformat(),
+                "fields": {
+                    "orderid": trade.orderid,
+                    "tradeid": trade.tradeid,
+                    "direction": trade.direction.value,
+                    "offset": trade.offset.value,
+                    "price": trade.price,
+                    "volume": trade.volume,
+                    "gateway_name": trade.gateway_name
+                }
+            }
+            json_body.append(d)
+
+        self.client.write_points(json_body, batch_size=10000)
+
     def load_bar_data(
         self,
         symbol: str,
@@ -277,6 +354,93 @@ class InfluxdbDatabase(BaseDatabase):
             ticks.append(tick)
 
         return ticks
+
+    def load_order(
+        self,
+        symbol: str,
+        exchange: Exchange,
+        start: datetime,
+        end: datetime
+    ) -> List[OrderData]:
+        """"""
+        query = (
+            "select * from order_data"
+            " where vt_symbol=$vt_symbol"
+            f" and time >= '{start.date().isoformat()}'"
+            f" and time <= '{end.date().isoformat()}';"
+        )
+
+        bind_params = {
+            "vt_symbol": generate_vt_symbol(symbol, exchange),
+        }
+
+        result = self.client.query(query, bind_params=bind_params)
+        points = result.get_points()
+
+        orders: List[OrderData] = []
+        for d in points:
+            dt = datetime.strptime(d["time"], "%Y-%m-%dT%H:%M:%SZ")
+
+            db_order = OrderData(
+                symbol=symbol,
+                exchange=exchange,
+                datetime=DB_TZ.localize(dt),
+                orderid=d["orderid"],
+                type=d["type"],
+                direction=Direction(d["direction"]),
+                offset=Offset(d["offset"]),
+                price=d["price"],
+                volume=d["volume"],
+                traded=d["traded"],
+                status=d["status"],
+                reference=d["reference"],
+                gateway_name=d["gateway_name"]
+            )
+            orders.append(db_order)
+
+        return orders
+
+    def load_trade(
+        self,
+        symbol: str,
+        exchange: Exchange,
+        start: datetime,
+        end: datetime
+    ) -> List[TradeData]:
+        """"""
+        query = (
+            "select * from trade_data"
+            " where vt_symbol=$vt_symbol"
+            f" and time >= '{start.date().isoformat()}'"
+            f" and time <= '{end.date().isoformat()}';"
+        )
+
+        bind_params = {
+            "vt_symbol": generate_vt_symbol(symbol, exchange),
+        }
+
+        result = self.client.query(query, bind_params=bind_params)
+        points = result.get_points()
+
+        trades: List[TradeData] = []
+        for d in points:
+            dt = datetime.strptime(d["time"], "%Y-%m-%dT%H:%M:%SZ")
+
+            db_trade = TradeData(
+                symbol=symbol,
+                exchange=exchange,
+                datetime=DB_TZ.localize(dt),
+                orderid=d["orderid"],
+                tradeid=d["tradeid"],
+                direction=Direction(d["direction"]),
+                offset=Offset(d["offset"]),
+                price=d["price"],
+                volume=d["volume"],
+                gateway_name=d["gateway_name"]
+            )
+            trades.append(db_trade)
+
+        return trades
 
     def delete_bar_data(
         self,
