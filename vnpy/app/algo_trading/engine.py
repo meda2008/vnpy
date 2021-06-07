@@ -2,8 +2,8 @@
 from vnpy.event import EventEngine, Event
 from vnpy.trader.engine import BaseEngine, MainEngine
 from vnpy.trader.event import (
-    EVENT_TICK, EVENT_TIMER, EVENT_ORDER,
-    EVENT_TRADE, EVENT_CONTRACT
+    EVENT_TICK, EVENT_TIMER, EVENT_ORDER, EVENT_TRADE,
+    EVENT_ACCOUNT, EVENT_POSITION, EVENT_CONTRACT
 )
 from vnpy.trader.constant import (Direction, Offset, OrderType)
 from vnpy.trader.object import (SubscribeRequest, OrderRequest, LogData)
@@ -65,6 +65,7 @@ class AlgoEngine(BaseEngine):
         from .algos.grid_algo import GridAlgo
         from .algos.dma_algo import DmaAlgo
         from .algos.arbitrage_algo import ArbitrageAlgo
+        from .algos.super_grid_algo import SuperGridAlgo
 
         self.add_algo_template(TwapAlgo)
         self.add_algo_template(IcebergAlgo)
@@ -74,6 +75,7 @@ class AlgoEngine(BaseEngine):
         self.add_algo_template(GridAlgo)
         self.add_algo_template(DmaAlgo)
         self.add_algo_template(ArbitrageAlgo)
+        self.add_algo_template(SuperGridAlgo)
 
         from .genus import (
             GenusVWAP,
@@ -115,11 +117,8 @@ class AlgoEngine(BaseEngine):
         self.event_engine.register(EVENT_ORDER, self.process_order_event)
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
-
-    def process_contract_event(self, event: Event):
-        """"""
-        contract = event.data
-        self.vt_symbols.append(contract.vt_symbol)
+        self.event_engine.register(EVENT_ACCOUNT, self.process_account_event)
+        self.event_engine.register(EVENT_POSITION, self.process_position_event)
 
     def process_tick_event(self, event: Event):
         """"""
@@ -154,6 +153,24 @@ class AlgoEngine(BaseEngine):
         if algo:
             algo.update_order(order)
 
+    def process_contract_event(self, event: Event):
+        """"""
+        contract = event.data
+        self.vt_symbols.append(contract.vt_symbol)
+
+    def process_account_event(self, event: Event):
+        """"""
+        account = event.data
+
+    def process_position_event(self, event: Event):
+        """"""
+        position = event.data
+
+        algos = self.symbol_algo_map.get(position.vt_symbol, None)
+        if algos:
+            for algo in algos:
+                algo.update_position(position)
+
     def start_algo(self, setting: dict):
         """"""
         template_name: str = setting["template_name"]
@@ -163,6 +180,7 @@ class AlgoEngine(BaseEngine):
         algo_template = self.algo_templates[template_name]
 
         algo = algo_template.new(self, setting)
+        algo.query_position(setting["vt_symbol"])
         algo.start()
 
         self.algos[algo.algo_name] = algo
@@ -192,7 +210,6 @@ class AlgoEngine(BaseEngine):
             return
 
         algos = self.symbol_algo_map.setdefault(vt_symbol, set())
-
         if not algos:
             req = SubscribeRequest(
                 symbol=contract.symbol,
@@ -201,6 +218,15 @@ class AlgoEngine(BaseEngine):
             self.main_engine.subscribe(req, contract.gateway_name)
 
         algos.add(algo)
+
+    def query_position(self, algo: AlgoTemplate, vt_symbol: str):
+        """"""
+        contract = self.main_engine.get_contract(vt_symbol)
+        if not contract:
+            self.write_log(f'查询持仓失败，找不到合约：{vt_symbol}', algo)
+            return
+
+        self.main_engine.query_position(contract.gateway_name)
 
     def send_order(
         self,

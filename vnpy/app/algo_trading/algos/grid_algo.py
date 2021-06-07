@@ -3,7 +3,6 @@ from vnpy.trader.constant import Direction
 from vnpy.trader.object import TradeData, OrderData, TickData
 from vnpy.trader.engine import BaseEngine
 from vnpy.app.algo_trading import AlgoTemplate
-from vnpy.trader.database import database_manager
 
 
 class GridAlgo(AlgoTemplate):

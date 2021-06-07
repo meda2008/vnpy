@@ -1,5 +1,5 @@
 from vnpy.trader.engine import BaseEngine
-from vnpy.trader.object import TickData, OrderData, TradeData
+from vnpy.trader.object import TickData, OrderData, TradeData, PositionData
 from vnpy.trader.constant import OrderType, Offset, Direction
 from vnpy.trader.utility import virtual
 
@@ -53,6 +53,10 @@ class AlgoTemplate:
         """"""
         self.on_trade(trade)
 
+    def update_position(self, pos: PositionData):
+        """"""
+        self.on_position(pos)
+
     def update_timer(self):
         """"""
         if self.active:
@@ -83,6 +87,11 @@ class AlgoTemplate:
         pass
 
     @virtual
+    def on_position(self, pos: PositionData):
+        """"""
+        pass
+
+    @virtual
     def on_timer(self):
         """"""
         pass
@@ -105,6 +114,10 @@ class AlgoTemplate:
     def subscribe(self, vt_symbol):
         """"""
         self.algo_engine.subscribe(self, vt_symbol)
+
+    def query_position(self, vt_symbol):
+        """"""
+        self.algo_engine.query_position(vt_symbol)
 
     def buy(
         self,

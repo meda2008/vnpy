@@ -61,6 +61,8 @@ class AlgoWidget(QtWidgets.QWidget):
             if field_type == list:
                 widget = QtWidgets.QComboBox()
                 widget.addItems(field_value)
+            elif field_type == bool:
+                widget = QtWidgets.QCheckBox()
             else:
                 widget = QtWidgets.QLineEdit()
                 if field_name == "vt_symbol":
@@ -145,6 +147,8 @@ class AlgoWidget(QtWidgets.QWidget):
 
                 if field_type == list:
                     field_value = field_text
+                elif field_type == bool:
+                    field_value = bool(field_text)
                 else:
                     try:
                         field_value = field_type(field_text)
@@ -175,6 +179,8 @@ class AlgoWidget(QtWidgets.QWidget):
             widget, field_type = tp
             if field_type == list:
                 field_value = str(widget.currentText())
+            elif field_type == bool:
+                field_value = bool(widget.isChecked())
             else:
                 try:
                     field_value = field_type(widget.text())
@@ -214,6 +220,8 @@ class AlgoWidget(QtWidgets.QWidget):
             elif isinstance(widget, QtWidgets.QComboBox):
                 ix = widget.findText(value)
                 widget.setCurrentIndex(ix)
+            elif isinstance(widget, QtWidgets.QCheckBox):
+                widget.setChecked(bool(value))
 
     def save_setting(self):
         """
@@ -283,10 +291,8 @@ class AlgoMonitor(QtWidgets.QTableWidget):
         self.parameters_signal.connect(self.process_parameters_event)
         self.variables_signal.connect(self.process_variables_event)
 
-        self.event_engine.register(
-            EVENT_ALGO_PARAMETERS, self.parameters_signal.emit)
-        self.event_engine.register(
-            EVENT_ALGO_VARIABLES, self.variables_signal.emit)
+        self.event_engine.register(EVENT_ALGO_PARAMETERS, self.parameters_signal.emit)
+        self.event_engine.register(EVENT_ALGO_VARIABLES, self.variables_signal.emit)
 
     def process_parameters_event(self, event):
         """"""
@@ -421,8 +427,7 @@ class SettingMonitor(QtWidgets.QTableWidget):
         """"""
         self.setting_signal.connect(self.process_setting_event)
 
-        self.event_engine.register(
-            EVENT_ALGO_SETTING, self.setting_signal.emit)
+        self.event_engine.register(EVENT_ALGO_SETTING, self.setting_signal.emit)
 
     def process_setting_event(self, event):
         """"""
@@ -453,8 +458,7 @@ class SettingMonitor(QtWidgets.QTableWidget):
             use_button = QtWidgets.QPushButton("使用")
             use_button.clicked.connect(use_func)
 
-            remove_func = partial(self.remove_setting,
-                                  setting_name=setting_name)
+            remove_func = partial(self.remove_setting, setting_name=setting_name)
             remove_button = QtWidgets.QPushButton("移除")
             remove_button.clicked.connect(remove_func)
 

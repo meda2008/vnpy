@@ -8,7 +8,7 @@ NAME_DISPLAY_MAP = {
     "offset": "开平",
     "active": "算法状态",
     "traded": "成交数量",
-    "order_volume": "单笔委托",
+    "order_volume": "每笔委托数量",
     "timer_count": "本轮读秒",
     "total_count": "累计读秒",
     "template_name": "算法模板",
@@ -29,5 +29,21 @@ NAME_DISPLAY_MAP = {
 
     "min_volume": "最小委托量",
     "max_volume": "最大委托量",
-    "volume_change": "委托量变化"
+    "volume_change": "委托量变化",
+
+    "lower_price": "价格区间(上)",
+    "upper_price": "价格区间(下)",
+    "trigger_price": "触发基准价",
+    "rise_percent": "上涨%",
+    "fall_down": "回落卖出%",
+    "fall_percent": "下跌%",
+    "rise_up": "反弹买入%",
+    "order_amount": "每笔委托金额",
+    "max_position": "最大持仓",
+    "min_position": "最小底仓",
+    "multiple_order": "倍数委托",
+    "deadline": "截止日期",
+    "give_up_bias": "偏差控制%",
+    "buy_offset": "买入委托价+",
+    "sell_offset": "卖出委托价-",
 }

@@ -217,6 +217,16 @@ class MainEngine:
         else:
             return None
 
+    def query_position(self, gateway_name: str) -> None:
+        """
+        Send query position request to specific gateway.
+        """
+        gateway = self.get_gateway(gateway_name)
+        if gateway:
+            return gateway.query_position()
+        else:
+            return None
+
     def close(self) -> None:
         """
         Make sure every gateway and app is closed properly before
