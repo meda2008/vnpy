@@ -13,14 +13,14 @@ from vnpy.trader.setting import SETTINGS
 from .template import AlgoTemplate
 from .base import (
     EVENT_ALGO_LOG, EVENT_ALGO_PARAMETERS,
-    EVENT_ALGO_SETTING, EVENT_ALGO_VARIABLES,
-    APP_NAME
+    EVENT_ALGO_SETTING, EVENT_ALGO_VARIABLES, APP_NAME
 )
 from .genus import GenusClient
 
 
 class AlgoEngine(BaseEngine):
     """"""
+
     setting_filename = "algo_trading_setting.json"
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):

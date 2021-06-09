@@ -187,7 +187,6 @@ class BacktestingEngine:
         annual_days: int = 240
     ):
         """"""
-        self.mode = mode
         self.vt_symbol = vt_symbol
         self.interval = Interval(interval)
         self.rate = rate
@@ -209,9 +208,10 @@ class BacktestingEngine:
     def add_strategy(self, strategy_class: type, setting: dict):
         """"""
         self.strategy_class = strategy_class
-        self.strategy = strategy_class(
-            self, strategy_class.__name__, self.vt_symbol, setting
-        )
+        if strategy_class.__init__.__code__.co_argcount == 4:
+            self.strategy = strategy_class(self, strategy_class.__name__, setting)
+        else:
+            self.strategy = strategy_class(self, strategy_class.__name__, self.vt_symbol, setting)
 
     def load_data(self):
         """"""
@@ -1152,6 +1152,22 @@ class BacktestingEngine:
         Return all daily result data.
         """
         return list(self.daily_results.values())
+
+    def subscribe(self, tpl_class,  vt_symbol):
+        """For support algorithm template back testing"""
+        pass
+
+    def query_position(self, tpl_class, vt_symbol):
+        """For support algorithm template back testing"""
+        pass
+
+    def put_parameters_event(self, tpl_class, parameters):
+        """For support algorithm template back testing"""
+        pass
+
+    def put_variables_event(self, tpl_class, variables):
+        """For support algorithm template back testing"""
+        pass
 
 
 class DailyResult:

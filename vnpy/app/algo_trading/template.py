@@ -35,6 +35,14 @@ class AlgoTemplate:
         algo = cls(algo_engine, algo_name, setting)
         return algo
 
+    @classmethod
+    def get_class_parameters(cls):
+        """"""
+        class_parameters = {}
+        for name, value in cls.default_setting.items():
+            class_parameters[name] = value
+        return class_parameters
+
     def update_tick(self, tick: TickData):
         """"""
         if self.active:
@@ -62,6 +70,12 @@ class AlgoTemplate:
         if self.active:
             self.on_timer()
 
+    @virtual
+    def on_init(self):
+        """"""
+        pass
+
+    @virtual
     def on_start(self):
         """"""
         pass
@@ -117,7 +131,7 @@ class AlgoTemplate:
 
     def query_position(self, vt_symbol):
         """"""
-        self.algo_engine.query_position(vt_symbol)
+        self.algo_engine.query_position(self, vt_symbol)
 
     def buy(
         self,

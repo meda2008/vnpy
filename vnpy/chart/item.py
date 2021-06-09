@@ -21,7 +21,6 @@ from vnpy.trader.object import (
 from .base import BLACK_COLOR, UP_COLOR, DOWN_COLOR, PEN_WIDTH, BAR_WIDTH
 from .manager import BarManager
 
-
 CHINA_TZ = pytz.timezone("Asia/Shanghai")
 
 
@@ -239,26 +238,30 @@ class CandleItem(ChartItem):
         bar = self._manager.get_bar(ix)
 
         if bar:
-            words = [
-                "Date",
-                bar.datetime.strftime("%Y-%m-%d"),
-                "",
-                "Time",
-                bar.datetime.strftime("%H:%M"),
-                "",
-                "Open",
-                str(bar.open_price),
-                "",
-                "High",
-                str(bar.high_price),
-                "",
-                "Low",
-                str(bar.low_price),
-                "",
-                "Close",
-                str(bar.close_price)
-            ]
-            text = "\n".join(words)
+            text = """日期
+  {}
+时间
+  {}
+开盘
+  {:10.2f}
+最高
+  {:10.2f}
+最低
+  {:10.2f}
+收盘
+  {:10.2f}
+涨幅
+  {:10.2f}%
+振幅
+  {:10.2f}%"""
+            text = text.format(bar.datetime.strftime("%Y-%m-%d"),
+                               bar.datetime.strftime("%H:%M"),
+                               bar.open_price,
+                               bar.high_price,
+                               bar.low_price,
+                               bar.close_price,
+                               (bar.close_price - bar.open_price) / bar.open_price * 100,
+                               (bar.high_price - bar.low_price) / bar.open_price * 100)
         else:
             text = ""
 
@@ -326,7 +329,7 @@ class VolumeItem(ChartItem):
         bar = self._manager.get_bar(ix)
 
         if bar:
-            text = f"Volume {bar.volume}"
+            text = f"成交量 {bar.volume}"
         else:
             text = ""
 
@@ -372,7 +375,7 @@ class LineItem(CandleItem):
         text = ""
         bar = self._manager.get_bar(ix)
         if bar:
-            text = f"Close:{bar.close_price}"
+            text = f"最新:{bar.close_price}"
         return text
 
 
@@ -1014,7 +1017,7 @@ class OrderItem(ScatterPlotItem, CandleItem):
                 if order.direction == Direction.LONG:
                     scatter_symbol = "t1"  # Triangle Up
                 else:
-                    scatter_symbol = "t"   # Triangle Down
+                    scatter_symbol = "t"  # Triangle Down
 
                 if order.offset == Offset.OPEN:
                     scatter_brush = pg.mkBrush((255, 0, 0))  # Red
@@ -1022,7 +1025,7 @@ class OrderItem(ScatterPlotItem, CandleItem):
                     scatter_brush = pg.mkBrush((0, 255, 0))  # Green
 
                 if order.status in (Status.REJECTED, Status.CANCELLED):
-                    scatter_symbol = "x"   # Cross
+                    scatter_symbol = "x"  # Cross
                 elif order.status == Status.PARTTRADED:
                     scatter_brush = pg.mkBrush((0, 0, 255))  # Blue
 
