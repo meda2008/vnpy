@@ -13,7 +13,8 @@ from peewee import (
     ModelDelete,
     fn
 )
-
+from playhouse.pool import PooledPostgresqlDatabase
+from playhouse.shortcuts import ReconnectMixin
 from vnpy.trader.constant import (
     Exchange,
     Interval,
@@ -37,6 +38,30 @@ from vnpy.trader.database import (
 from vnpy.trader.setting import SETTINGS
 
 
+class RetryPostgresqlDatabase(ReconnectMixin, PooledPostgresqlDatabase):
+
+    _instance = None
+
+    @staticmethod
+    def get_instance():
+        if not RetryPostgresqlDatabase._instance:
+            RetryPostgresqlDatabase._instance = RetryPostgresqlDatabase(
+                database=SETTINGS["database.database"],
+                max_connections=SETTINGS.get('database.max_connections', 2),
+                stale_timeout=SETTINGS.get('database.stale_timeout', 300),
+                host=SETTINGS.get('database.host', '127.0.0.1'),
+                user=SETTINGS.get('database.user', 'root'),
+                password=SETTINGS.get('database.password', ''),
+                port=SETTINGS.get('database.port', 3306),
+                charset=SETTINGS.get("database.charset", "utf8")
+            )
+        return RetryPostgresqlDatabase._instance
+
+
+db = RetryPostgresqlDatabase.get_instance()
+
+
+'''
 db = PeeweePostgresqlDatabase(
     database=SETTINGS["database.database"],
     user=SETTINGS["database.user"],
@@ -46,6 +71,7 @@ db = PeeweePostgresqlDatabase(
     charset=SETTINGS.get("database.charset", "utf8"),
     autorollback=True
 )
+'''
 
 
 class DbBarData(Model):

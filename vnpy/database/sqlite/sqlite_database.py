@@ -14,7 +14,8 @@ from peewee import (
     chunked,
     fn
 )
-
+from playhouse.pool import PooledSqliteDatabase
+from playhouse.shortcuts import ReconnectMixin
 from vnpy.trader.constant import (
     Exchange,
     Interval,
@@ -39,7 +40,21 @@ from vnpy.trader.database import (
 
 
 path = str(get_file_path("database.db"))
-db = PeeweeSqliteDatabase(path)
+
+
+class RetrySqliteDatabase(ReconnectMixin, PooledSqliteDatabase):
+
+    _instance = None
+
+    @staticmethod
+    def get_instance():
+        if not RetrySqliteDatabase._instance:
+            RetrySqliteDatabase._instance = RetrySqliteDatabase(path)
+        return RetrySqliteDatabase._instance
+
+
+db = RetrySqliteDatabase.get_instance()
+# db = PeeweeSqliteDatabase(path)
 
 
 class DbBarData(Model):

@@ -1,4 +1,5 @@
 """"""
+from abc import ABC
 from datetime import datetime
 from typing import List
 
@@ -14,7 +15,8 @@ from peewee import (
     chunked,
     fn
 )
-
+from playhouse.pool import PooledMySQLDatabase
+from playhouse.shortcuts import ReconnectMixin
 from vnpy.trader.constant import (
     Exchange,
     Interval,
@@ -38,6 +40,30 @@ from vnpy.trader.database import (
 from vnpy.trader.setting import SETTINGS
 
 
+class RetryMySQLDatabase(ReconnectMixin, PooledMySQLDatabase):
+
+    _instance = None
+
+    @staticmethod
+    def get_instance():
+        if not RetryMySQLDatabase._instance:
+            RetryMySQLDatabase._instance = RetryMySQLDatabase(
+                database=SETTINGS["database.database"],
+                max_connections=SETTINGS.get('database.max_connections', 2),
+                stale_timeout=SETTINGS.get('database.stale_timeout', 300),
+                host=SETTINGS.get('database.host', '127.0.0.1'),
+                user=SETTINGS.get('database.user', 'root'),
+                password=SETTINGS.get('database.password', ''),
+                port=SETTINGS.get('database.port', 3306),
+                charset=SETTINGS.get("database.charset", "utf8")
+            )
+        return RetryMySQLDatabase._instance
+
+
+db = RetryMySQLDatabase.get_instance()
+
+
+"""
 db = PeeweeMySQLDatabase(
     database=SETTINGS["database.database"],
     user=SETTINGS["database.user"],
@@ -46,6 +72,7 @@ db = PeeweeMySQLDatabase(
     port=SETTINGS["database.port"],
     charset=SETTINGS.get("database.charset", "utf8")
 )
+"""
 
 
 class DbBarData(Model):
