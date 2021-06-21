@@ -131,10 +131,16 @@ class SuperGridAlgo(AlgoTemplate):
         # 如果超出网格设置的上下沿则停止网格
         if (last_price > self.upper_price) or (last_price < self.lower_price):
             self.cancel_all()
-            self.grid_sleep = True
+            if not self.grid_sleep:
+                self.grid_sleep = True
+                self.put_variables_event()
+                self.write_log(f"休眠: {last_price}, {self.upper_price}, {self.lower_price}")
         # 落入网格区间重新打开网格
         else:
-            self.grid_sleep = False
+            if self.grid_sleep:
+                self.grid_sleep = False
+                self.put_variables_event()
+                self.write_log(f"运行: {last_price}, {self.upper_price}, {self.lower_price}")
 
         # 如果是休眠状态则不执行网格逻辑
         if self.grid_sleep:

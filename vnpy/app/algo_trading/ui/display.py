@@ -31,8 +31,8 @@ NAME_DISPLAY_MAP = {
     "max_volume": "最大委托量",
     "volume_change": "委托量变化",
 
-    "lower_price": "价格区间(上)",
-    "upper_price": "价格区间(下)",
+    "upper_price": "价格区间(上)",
+    "lower_price": "价格区间(下)",
     "trigger_price": "触发基准价",
     "rise_percent": "上涨%",
     "fall_down": "回落卖出%",
