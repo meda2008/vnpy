@@ -87,13 +87,10 @@ EXCHANGE_VT2IB = {
     Exchange.IEX: "IEX",
     Exchange.IBKRATS: "IBKRATS",
     Exchange.OTC: "PINK",
-<<<<<<< HEAD
     Exchange.TSE: "TSE",
+    Exchange.SGX: "SGX",
     Exchange.CMECRYPTO: "CMECRYPTO",
     Exchange.ICECRYPTO: "ICECRYPTO",
-=======
-    Exchange.SGX: "SGX"
->>>>>>> upstream/master
 }
 EXCHANGE_IB2VT = {v: k for k, v in EXCHANGE_VT2IB.items()}
 
