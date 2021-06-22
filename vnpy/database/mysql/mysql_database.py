@@ -242,7 +242,7 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        with self.db.execution_context():
+        with self.db.connection_context():
             # Upsert data into database
             with self.db.atomic():
                 for c in chunked(data, 50):
@@ -289,7 +289,7 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        with self.db.execution_context():
+        with self.db.connection_context():
             # Upsert data into database
             with self.db.atomic():
                 for c in chunked(data, 50):
@@ -312,7 +312,7 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_orderid")
             data.append(d)
 
-        with self.db.execution_context():
+        with self.db.connection_context():
             # Upsert data into database
             with self.db.atomic():
                 for c in chunked(data, 50):
@@ -334,7 +334,7 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_tradeid")
             data.append(d)
 
-        with self.db.execution_context():
+        with self.db.connection_context():
             # Upsert data into database
             with self.db.atomic():
                 for c in chunked(data, 50):
@@ -349,7 +349,7 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[BarData]:
         """"""
-        with self.db.execution_context():
+        with self.db.connection_context():
             s: ModelSelect = (
                 DbBarData.select().where(
                     (DbBarData.symbol == symbol)
@@ -380,7 +380,7 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[TickData]:
         """"""
-        with self.db.execution_context():
+        with self.db.connection_context():
             s: ModelSelect = (
                 DbTickData.select().where(
                     (DbTickData.symbol == symbol)
@@ -409,7 +409,7 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[OrderData]:
         """"""
-        with self.db.execution_context():
+        with self.db.connection_context():
             s: ModelSelect = (
                 DbOrderData.select().where(
                     (DbOrderData.symbol == symbol)
@@ -441,7 +441,7 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[TradeData]:
         """"""
-        with self.db.execution_context():
+        with self.db.connection_context():
             s: ModelSelect = (
                 DbTradeData.select().where(
                     (DbTradeData.symbol == symbol)
@@ -470,7 +470,7 @@ class MysqlDatabase(BaseDatabase):
         interval: Interval
     ) -> int:
         """"""
-        with self.db.execution_context():
+        with self.db.connection_context():
             d: ModelDelete = DbBarData.delete().where(
                 (DbBarData.symbol == symbol)
                 & (DbBarData.exchange == exchange.value)
@@ -493,7 +493,7 @@ class MysqlDatabase(BaseDatabase):
         exchange: Exchange
     ) -> int:
         """"""
-        with self.db.execution_context():
+        with self.db.connection_context():
             d: ModelDelete = DbTickData.delete().where(
                 (DbTickData.symbol == symbol)
                 & (DbTickData.exchange == exchange.value)
@@ -505,7 +505,7 @@ class MysqlDatabase(BaseDatabase):
         """
         Return data avaible in database.
         """
-        with self.db.execution_context():
+        with self.db.connection_context():
             # Init bar overview for old version database
             data_count = DbBarData.select().count()
             overview_count = DbBarOverview.select().count()

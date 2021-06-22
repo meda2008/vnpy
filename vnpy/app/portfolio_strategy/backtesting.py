@@ -113,9 +113,10 @@ class BacktestingEngine:
 
     def add_strategy(self, strategy_class: type, setting: dict) -> None:
         """"""
-        self.strategy = strategy_class(
-            self, strategy_class.__name__, copy(self.vt_symbols), setting
-        )
+        if strategy_class.__init__.__code__.co_argcount == 4:
+            self.strategy = strategy_class(self, strategy_class.__name__, setting)
+        else:
+            self.strategy = strategy_class(self, strategy_class.__name__, copy(self.vt_symbols), setting)
 
     def load_data(self) -> None:
         """"""
@@ -690,6 +691,22 @@ class BacktestingEngine:
         Return all daily result data.
         """
         return list(self.daily_results.values())
+
+    def subscribe(self, tpl_class,  vt_symbol):
+        """For support algorithm template back testing"""
+        pass
+
+    def query_position(self, tpl_class, vt_symbol):
+        """For support algorithm template back testing"""
+        pass
+
+    def put_parameters_event(self, tpl_class, parameters):
+        """For support algorithm template back testing"""
+        pass
+
+    def put_variables_event(self, tpl_class, variables):
+        """For support algorithm template back testing"""
+        pass
 
 
 class ContractDailyResult:
