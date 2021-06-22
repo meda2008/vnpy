@@ -233,10 +233,8 @@ class MysqlDatabase(BaseDatabase):
 
         # Convert bar object to dict and adjust timezone
         data = []
-
         for bar in bars:
             bar.datetime = convert_tz(bar.datetime)
-
             d = bar.__dict__
             d["exchange"] = d["exchange"].value
             d["interval"] = d["interval"].value
@@ -244,38 +242,38 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        # Upsert data into database
-        with self.db.atomic():
-            for c in chunked(data, 50):
-                DbBarData.insert_many(c).on_conflict_replace().execute()
+        with self.db.execution_context():
+            # Upsert data into database
+            with self.db.atomic():
+                for c in chunked(data, 50):
+                    DbBarData.insert_many(c).on_conflict_replace().execute()
 
-        # Update bar overview
-        overview: DbBarOverview = DbBarOverview.get_or_none(
-            DbBarOverview.symbol == symbol,
-            DbBarOverview.exchange == exchange.value,
-            DbBarOverview.interval == interval.value,
-        )
-
-        if not overview:
-            overview = DbBarOverview()
-            overview.symbol = symbol
-            overview.exchange = exchange.value
-            overview.interval = interval.value
-            overview.start = bars[0].datetime
-            overview.end = bars[-1].datetime
-            overview.count = len(bars)
-        else:
-            overview.start = min(bars[0].datetime, overview.start)
-            overview.end = max(bars[-1].datetime, overview.end)
-
-            s: ModelSelect = DbBarData.select().where(
-                (DbBarData.symbol == symbol)
-                & (DbBarData.exchange == exchange.value)
-                & (DbBarData.interval == interval.value)
+            # Update bar overview
+            overview: DbBarOverview = DbBarOverview.get_or_none(
+                DbBarOverview.symbol == symbol,
+                DbBarOverview.exchange == exchange.value,
+                DbBarOverview.interval == interval.value,
             )
-            overview.count = s.count()
 
-        overview.save()
+            if not overview:
+                overview = DbBarOverview()
+                overview.symbol = symbol
+                overview.exchange = exchange.value
+                overview.interval = interval.value
+                overview.start = bars[0].datetime
+                overview.end = bars[-1].datetime
+                overview.count = len(bars)
+            else:
+                overview.start = min(bars[0].datetime, overview.start)
+                overview.end = max(bars[-1].datetime, overview.end)
+
+                s: ModelSelect = DbBarData.select().where(
+                    (DbBarData.symbol == symbol)
+                    & (DbBarData.exchange == exchange.value)
+                    & (DbBarData.interval == interval.value)
+                )
+                overview.count = s.count()
+            overview.save()
 
     def save_tick_data(self, ticks: List[TickData]) -> bool:
         """"""
@@ -291,10 +289,11 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        # Upsert data into database
-        with self.db.atomic():
-            for c in chunked(data, 50):
-                DbTickData.insert_many(c).on_conflict_replace().execute()
+        with self.db.execution_context():
+            # Upsert data into database
+            with self.db.atomic():
+                for c in chunked(data, 50):
+                    DbTickData.insert_many(c).on_conflict_replace().execute()
 
     def save_order(self, orders: List[OrderData]) -> bool:
         """"""
@@ -313,10 +312,11 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_orderid")
             data.append(d)
 
-        # Upsert data into database
-        with self.db.atomic():
-            for c in chunked(data, 50):
-                DbOrderData.insert_many(c).on_conflict_replace().execute()
+        with self.db.execution_context():
+            # Upsert data into database
+            with self.db.atomic():
+                for c in chunked(data, 50):
+                    DbOrderData.insert_many(c).on_conflict_replace().execute()
 
     def save_trade(self, trades: List[TradeData]) -> bool:
         """"""
@@ -334,10 +334,11 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_tradeid")
             data.append(d)
 
-        # Upsert data into database
-        with self.db.atomic():
-            for c in chunked(data, 50):
-                DbTradeData.insert_many(c).on_conflict_replace().execute()
+        with self.db.execution_context():
+            # Upsert data into database
+            with self.db.atomic():
+                for c in chunked(data, 50):
+                    DbTradeData.insert_many(c).on_conflict_replace().execute()
 
     def load_bar_data(
         self,
@@ -348,27 +349,28 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[BarData]:
         """"""
-        s: ModelSelect = (
-            DbBarData.select().where(
-                (DbBarData.symbol == symbol)
-                & (DbBarData.exchange == exchange.value)
-                & (DbBarData.interval == interval.value)
-                & (DbBarData.datetime >= start)
-                & (DbBarData.datetime <= end)
-            ).order_by(DbBarData.datetime)
-        )
+        with self.db.execution_context():
+            s: ModelSelect = (
+                DbBarData.select().where(
+                    (DbBarData.symbol == symbol)
+                    & (DbBarData.exchange == exchange.value)
+                    & (DbBarData.interval == interval.value)
+                    & (DbBarData.datetime >= start)
+                    & (DbBarData.datetime <= end)
+                ).order_by(DbBarData.datetime)
+            )
 
-        vt_symbol = f"{symbol}.{exchange.value}"
-        bars: List[BarData] = []
-        for db_bar in s:
-            db_bar.datetime = DB_TZ.localize(db_bar.datetime)
-            db_bar.exchange = Exchange(db_bar.exchange)
-            db_bar.interval = Interval(db_bar.interval)
-            db_bar.gateway_name = "DB"
-            db_bar.vt_symbol = vt_symbol
-            bars.append(db_bar)
+            vt_symbol = f"{symbol}.{exchange.value}"
+            bars: List[BarData] = []
+            for db_bar in s:
+                db_bar.datetime = DB_TZ.localize(db_bar.datetime)
+                db_bar.exchange = Exchange(db_bar.exchange)
+                db_bar.interval = Interval(db_bar.interval)
+                db_bar.gateway_name = "DB"
+                db_bar.vt_symbol = vt_symbol
+                bars.append(db_bar)
 
-        return bars
+            return bars
 
     def load_tick_data(
         self,
@@ -378,25 +380,26 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[TickData]:
         """"""
-        s: ModelSelect = (
-            DbTickData.select().where(
-                (DbTickData.symbol == symbol)
-                & (DbTickData.exchange == exchange.value)
-                & (DbTickData.datetime >= start)
-                & (DbTickData.datetime <= end)
-            ).order_by(DbTickData.datetime)
-        )
+        with self.db.execution_context():
+            s: ModelSelect = (
+                DbTickData.select().where(
+                    (DbTickData.symbol == symbol)
+                    & (DbTickData.exchange == exchange.value)
+                    & (DbTickData.datetime >= start)
+                    & (DbTickData.datetime <= end)
+                ).order_by(DbTickData.datetime)
+            )
 
-        vt_symbol = f"{symbol}.{exchange.value}"
-        ticks: List[TickData] = []
-        for db_tick in s:
-            db_tick.datetime = DB_TZ.localize(db_tick.datetime)
-            db_tick.exchange = Exchange(db_tick.exchange)
-            db_tick.gateway_name = "DB"
-            db_tick.vt_symbol = vt_symbol
-            ticks.append(db_tick)
+            vt_symbol = f"{symbol}.{exchange.value}"
+            ticks: List[TickData] = []
+            for db_tick in s:
+                db_tick.datetime = DB_TZ.localize(db_tick.datetime)
+                db_tick.exchange = Exchange(db_tick.exchange)
+                db_tick.gateway_name = "DB"
+                db_tick.vt_symbol = vt_symbol
+                ticks.append(db_tick)
 
-        return ticks
+            return ticks
 
     def load_order(
         self,
@@ -406,28 +409,29 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[OrderData]:
         """"""
-        s: ModelSelect = (
-            DbOrderData.select().where(
-                (DbOrderData.symbol == symbol)
-                & (DbOrderData.exchange == exchange.value)
-                & (DbOrderData.datetime >= start)
-                & (DbOrderData.datetime <= end)
-            ).order_by(DbOrderData.datetime)
-        )
+        with self.db.execution_context():
+            s: ModelSelect = (
+                DbOrderData.select().where(
+                    (DbOrderData.symbol == symbol)
+                    & (DbOrderData.exchange == exchange.value)
+                    & (DbOrderData.datetime >= start)
+                    & (DbOrderData.datetime <= end)
+                ).order_by(DbOrderData.datetime)
+            )
 
-        vt_symbol = f"{symbol}.{exchange.value}"
-        orders: List[OrderData] = []
-        for db_order in s:
-            db_order.datetime = DB_TZ.localize(db_order.datetime)
-            db_order.exchange = Exchange(db_order.exchange)
-            db_order.direction = Direction(db_order.direction)
-            db_order.offset = Offset(db_order.offset)
-            db_order.type = OrderType(db_order.type)
-            db_order.status = Status(db_order.status)
-            db_order.vt_symbol = vt_symbol
-            orders.append(db_order)
+            vt_symbol = f"{symbol}.{exchange.value}"
+            orders: List[OrderData] = []
+            for db_order in s:
+                db_order.datetime = DB_TZ.localize(db_order.datetime)
+                db_order.exchange = Exchange(db_order.exchange)
+                db_order.direction = Direction(db_order.direction)
+                db_order.offset = Offset(db_order.offset)
+                db_order.type = OrderType(db_order.type)
+                db_order.status = Status(db_order.status)
+                db_order.vt_symbol = vt_symbol
+                orders.append(db_order)
 
-        return orders
+            return orders
 
     def load_trade(
         self,
@@ -437,26 +441,27 @@ class MysqlDatabase(BaseDatabase):
         end: datetime
     ) -> List[TradeData]:
         """"""
-        s: ModelSelect = (
-            DbTradeData.select().where(
-                (DbTradeData.symbol == symbol)
-                & (DbTradeData.exchange == exchange.value)
-                & (DbTradeData.datetime >= start)
-                & (DbTradeData.datetime <= end)
-            ).order_by(DbTradeData.datetime)
-        )
+        with self.db.execution_context():
+            s: ModelSelect = (
+                DbTradeData.select().where(
+                    (DbTradeData.symbol == symbol)
+                    & (DbTradeData.exchange == exchange.value)
+                    & (DbTradeData.datetime >= start)
+                    & (DbTradeData.datetime <= end)
+                ).order_by(DbTradeData.datetime)
+            )
 
-        vt_symbol = f"{symbol}.{exchange.value}"
-        trades: List[TradeData] = []
-        for db_trade in s:
-            db_trade.datetime = DB_TZ.localize(db_trade.datetime)
-            db_trade.exchange = Exchange(db_trade.exchange)
-            db_trade.direction = Direction(db_trade.direction)
-            db_trade.offset = Offset(db_trade.offset)
-            db_trade.vt_symbol = vt_symbol
-            trades.append(db_trade)
+            vt_symbol = f"{symbol}.{exchange.value}"
+            trades: List[TradeData] = []
+            for db_trade in s:
+                db_trade.datetime = DB_TZ.localize(db_trade.datetime)
+                db_trade.exchange = Exchange(db_trade.exchange)
+                db_trade.direction = Direction(db_trade.direction)
+                db_trade.offset = Offset(db_trade.offset)
+                db_trade.vt_symbol = vt_symbol
+                trades.append(db_trade)
 
-        return trades
+            return trades
 
     def delete_bar_data(
         self,
@@ -465,21 +470,22 @@ class MysqlDatabase(BaseDatabase):
         interval: Interval
     ) -> int:
         """"""
-        d: ModelDelete = DbBarData.delete().where(
-            (DbBarOverview.symbol == symbol)
-            & (DbBarOverview.exchange == exchange.value)
-            & (DbBarOverview.interval == interval.value)
-        )
-        count = d.execute()
+        with self.db.execution_context():
+            d: ModelDelete = DbBarData.delete().where(
+                (DbBarOverview.symbol == symbol)
+                & (DbBarOverview.exchange == exchange.value)
+                & (DbBarOverview.interval == interval.value)
+            )
+            count = d.execute()
 
-        # Delete bar overview
-        d2: ModelDelete = DbBarOverview.delete().where(
-            (DbBarData.symbol == symbol)
-            & (DbBarData.exchange == exchange.value)
-            & (DbBarData.interval == interval.value)
-        )
-        d2.execute()
-        return count
+            # Delete bar overview
+            d2: ModelDelete = DbBarOverview.delete().where(
+                (DbBarData.symbol == symbol)
+                & (DbBarData.exchange == exchange.value)
+                & (DbBarData.interval == interval.value)
+            )
+            d2.execute()
+            return count
 
     def delete_tick_data(
         self,
@@ -487,32 +493,34 @@ class MysqlDatabase(BaseDatabase):
         exchange: Exchange
     ) -> int:
         """"""
-        d: ModelDelete = DbTickData.delete().where(
-            (DbTickData.symbol == symbol)
-            & (DbTickData.exchange == exchange.value)
-        )
-        count = d.execute()
-        return count
+        with self.db.execution_context():
+            d: ModelDelete = DbTickData.delete().where(
+                (DbTickData.symbol == symbol)
+                & (DbTickData.exchange == exchange.value)
+            )
+            count = d.execute()
+            return count
 
     def get_bar_overview(self) -> List[BarOverview]:
         """
         Return data avaible in database.
         """
-        # Init bar overview for old version database
-        data_count = DbBarData.select().count()
-        overview_count = DbBarOverview.select().count()
-        if data_count and not overview_count:
-            self.init_bar_overview()
+        with self.db.execution_context():
+            # Init bar overview for old version database
+            data_count = DbBarData.select().count()
+            overview_count = DbBarOverview.select().count()
+            if data_count and not overview_count:
+                self.init_bar_overview()
 
-        s: ModelSelect = DbBarOverview.select()
-        overviews = []
-        for overview in s:
-            overview.exchange = Exchange(overview.exchange)
-            overview.interval = Interval(overview.interval)
-            overview.start = DB_TZ.localize(overview.start)
-            overview.end = DB_TZ.localize(overview.end)
-            overviews.append(overview)
-        return overviews
+            s: ModelSelect = DbBarOverview.select()
+            overviews = []
+            for overview in s:
+                overview.exchange = Exchange(overview.exchange)
+                overview.interval = Interval(overview.interval)
+                overview.start = DB_TZ.localize(overview.start)
+                overview.end = DB_TZ.localize(overview.end)
+                overviews.append(overview)
+            return overviews
 
     def init_bar_overview(self) -> None:
         """
